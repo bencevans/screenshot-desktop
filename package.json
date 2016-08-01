@@ -1,0 +1,31 @@
+{
+  "name": "screenshot-desktop",
+  "version": "0.0.0",
+  "description": "Capture a screenshot of your local machine",
+  "main": "index.js",
+  "dependencies": {
+    "pinkie-promise": "^2.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bencevans/screenshot-desktop.git"
+  },
+  "keywords": [
+    "screenshot",
+    "screengrab",
+    "screen",
+    "desktop",
+    "laptop",
+    "x11"
+  ],
+  "author": "Ben Evans <ben@bensbit.co.uk> (https://bencevans.io)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bencevans/screenshot-desktop/issues"
+  },
+  "homepage": "https://github.com/bencevans/screenshot-desktop#readme"
+}
