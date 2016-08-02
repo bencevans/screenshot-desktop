@@ -4,7 +4,8 @@
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
   "dependencies": {
-    "pinkie-promise": "^2.0.1"
+    "pinkie-promise": "^2.0.1",
+    "temp": "^0.8.3"
   },
   "devDependencies": {
     "ava": "^0.15.2"

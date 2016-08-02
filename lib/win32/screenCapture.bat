@@ -4,11 +4,6 @@
 @echo off
 setlocal
 
-//
-// Credit to https://github.com/npocmaka/batch.scripts/blob/master/hybrids/.net/c/screenCapture.bat
-//
-
-
 :: find csc.exe
 set "csc="
 for /r "%SystemRoot%\Microsoft.NET\Framework\" %%# in ("*csc.exe") do  set "csc=%%#"
@@ -20,7 +15,7 @@ if not exist "%csc%" (
 
 if not exist "%~n0.exe" (
    call %csc% /nologo /r:"Microsoft.VisualBasic.dll" /out:"%~n0.exe" "%~dpsfnx0" || (
-      exit /b %errorlevel% 
+      exit /b %errorlevel%
    )
 )
 %~n0.exe %*
@@ -28,7 +23,7 @@ endlocal & exit /b %errorlevel%
 
 */
 
-// reference  
+// reference
 // https://gallery.technet.microsoft.com/scriptcenter/eeff544a-f690-4f6b-a586-11eea6fc5eb8
 
 using System;
@@ -39,53 +34,53 @@ using System.Collections.Generic;
 using Microsoft.VisualBasic;
 
 
-/// Provides functions to capture the entire screen, or a particular window, and save it to a file. 
+/// Provides functions to capture the entire screen, or a particular window, and save it to a file.
 
 public class ScreenCapture
 {
 
-    /// Creates an Image object containing a screen shot the active window 
+    /// Creates an Image object containing a screen shot the active window
 
     public Image CaptureActiveWindow()
     {
         return CaptureWindow(User32.GetForegroundWindow());
     }
 
-    /// Creates an Image object containing a screen shot of the entire desktop 
+    /// Creates an Image object containing a screen shot of the entire desktop
 
     public Image CaptureScreen()
     {
         return CaptureWindow(User32.GetDesktopWindow());
     }
 
-    /// Creates an Image object containing a screen shot of a specific window 
+    /// Creates an Image object containing a screen shot of a specific window
 
     private Image CaptureWindow(IntPtr handle)
     {
-        // get te hDC of the target window 
+        // get te hDC of the target window
         IntPtr hdcSrc = User32.GetWindowDC(handle);
-        // get the size 
+        // get the size
         User32.RECT windowRect = new User32.RECT();
         User32.GetWindowRect(handle, ref windowRect);
         int width = windowRect.right - windowRect.left;
         int height = windowRect.bottom - windowRect.top;
-        // create a device context we can copy to 
+        // create a device context we can copy to
         IntPtr hdcDest = GDI32.CreateCompatibleDC(hdcSrc);
-        // create a bitmap we can copy it to, 
-        // using GetDeviceCaps to get the width/height 
+        // create a bitmap we can copy it to,
+        // using GetDeviceCaps to get the width/height
         IntPtr hBitmap = GDI32.CreateCompatibleBitmap(hdcSrc, width, height);
-        // select the bitmap object 
+        // select the bitmap object
         IntPtr hOld = GDI32.SelectObject(hdcDest, hBitmap);
-        // bitblt over 
+        // bitblt over
         GDI32.BitBlt(hdcDest, 0, 0, width, height, hdcSrc, 0, 0, GDI32.SRCCOPY);
-        // restore selection 
+        // restore selection
         GDI32.SelectObject(hdcDest, hOld);
-        // clean up 
+        // clean up
         GDI32.DeleteDC(hdcDest);
         User32.ReleaseDC(handle, hdcSrc);
-        // get a .NET image object for it 
+        // get a .NET image object for it
         Image img = Image.FromHbitmap(hBitmap);
-        // free up the Bitmap object 
+        // free up the Bitmap object
         GDI32.DeleteObject(hBitmap);
         return img;
     }
@@ -226,12 +221,12 @@ public class ScreenCapture
         }
     }
 
-    /// Helper class containing Gdi32 API functions 
+    /// Helper class containing Gdi32 API functions
 
     private class GDI32
     {
 
-        public const int SRCCOPY = 0x00CC0020; // BitBlt dwRop parameter 
+        public const int SRCCOPY = 0x00CC0020; // BitBlt dwRop parameter
         [DllImport("gdi32.dll")]
         public static extern bool BitBlt(IntPtr hObject, int nXDest, int nYDest,
           int nWidth, int nHeight, IntPtr hObjectSource,
@@ -250,7 +245,7 @@ public class ScreenCapture
     }
 
 
-    /// Helper class containing User32 API functions 
+    /// Helper class containing User32 API functions
 
     private class User32
     {
