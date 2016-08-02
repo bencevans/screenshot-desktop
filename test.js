@@ -6,6 +6,6 @@ test(t => {
   t.plan(1)
   return screenshot().then(img => {
     t.truthy(isBuffer(img))
-  })  
+  })
 })
 

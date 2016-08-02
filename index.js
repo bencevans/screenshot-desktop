@@ -1,6 +1,6 @@
 'strict mode'
 
-if (process.platform == 'linux') {
+if (process.platform === 'linux') {
   module.exports = require('./lib/linux')
 } else if (process.platform === 'darwin') {
   module.exports = require('./lib/darwin')
