@@ -6,9 +6,11 @@
   "dependencies": {
     "pinkie-promise": "^2.0.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "ava": "^0.15.2"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ava"
   },
   "repository": {
     "type": "git",
