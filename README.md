@@ -2,8 +2,12 @@
 
 > Capture a screenshot of your local machine
 
-* Supports Linux (PR's welcomed for OSX/Windows Support)
+* Multi/Cross Platform
   * Linux: required ImageMagick `apt-get install imagemagick`
+  * OSX: No dependencies required!
+  * Windows: No dependencies required!
+* Promise based API
+* JPG output
 
 ## Install
 
