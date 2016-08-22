@@ -2,3 +2,7 @@ node_modules
 out.jpg
 *.exe
 *.log
+
+#JetBrains
+.idea
+*.iml
