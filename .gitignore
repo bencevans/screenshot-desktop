@@ -1,4 +1,8 @@
 node_modules
-out.jpg
+out.*
 *.exe
 *.log
+
+#JetBrains
+.idea
+*.iml
