@@ -21,6 +21,10 @@ test(t => {
   if (screenshot.availableDisplays) {
     return screenshot.availableDisplays().then(displays => {
       checkDisplays(t, displays)
+
+      displays.forEach(display => {
+        screenshot(display.id)
+      })
     })
   }
 });
