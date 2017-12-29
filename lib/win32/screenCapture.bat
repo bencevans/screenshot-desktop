@@ -34,38 +34,6 @@ using System.Collections.Generic;
 using Microsoft.VisualBasic;
 
 
-delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref Rect lprcMonitor, IntPtr dwData);
-
-
-public class DisplayInfoCollection : List<DisplayInfo>
-{
-}
-
-public DisplayInfoCollection GetDisplays()
-{
-  DisplayInfoCollection col = new DisplayInfoCollection();
-
-  EnumDisplayMonitors( IntPtr.Zero, IntPtr.Zero,
-    delegate (IntPtr hMonitor, IntPtr hdcMonitor, ref Rect lprcMonitor,  IntPtr dwData)
-    {
-      MonitorInfo mi = new MonitorInfo();
-      mi.size = (uint)Marshal.SizeOf(mi);
-      bool success = GetMonitorInfo(hMonitor, ref mi);
-      if (success)
-      {
-          DisplayInfo di = new DisplayInfo();
-          di.ScreenWidth = (mi.monitor.right - mi.monitor.left).ToString();
-          di.ScreenHeight = (mi.monitor.bottom - mi.monitor.top).ToString();
-          di.MonitorArea = mi.monitor;
-          di.WorkArea = mi.work;
-          di.Availability = mi.flags.ToString();
-          col.Add(di);
-      }
-      return true;
-    }, IntPtr.Zero );
- return col;
-}
-
 
 /// Provides functions to capture the entire screen, or a particular window, and save it to a file.
 
@@ -134,6 +102,7 @@ public class ScreenCapture
     static String file = "screenshot.bmp";
     static System.Drawing.Imaging.ImageFormat format = System.Drawing.Imaging.ImageFormat.Bmp;
     static String windowTitle = "";
+    static List<MonitorInfoWithHandle> _monitorInfos;
 
     static void parseArguments()
     {
@@ -146,6 +115,11 @@ public class ScreenCapture
         if (arguments[1].ToLower().Equals("/h") || arguments[1].ToLower().Equals("/help"))
         {
             printHelp();
+            Environment.Exit(0);
+        }
+        if (arguments[1].ToLower().Equals("/l") || arguments[1].ToLower().Equals("/list"))
+        {
+            PrintMonitorInfo();
             Environment.Exit(0);
         }
 
@@ -280,7 +254,7 @@ public class ScreenCapture
 
     /// Helper class containing User32 API functions
 
-    private class User32
+    public class User32
     {
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -303,9 +277,9 @@ public class ScreenCapture
         public static extern IntPtr GetForegroundWindow();
 
        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-       struct MONITORINFOEX
+       public struct MONITORINFOEX
        {
-           public int Size;
+           public uint size;
            public RECT Monitor;
            public RECT WorkArea;
            public uint Flags;
@@ -314,11 +288,48 @@ public class ScreenCapture
        }
 
        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-       static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
+       public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
 
-       delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+       public delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
        [DllImport("user32.dll")]
-       static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
+       public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
+    }
+
+    private class MonitorInfoWithHandle
+    {
+        public IntPtr MonitorHandle { get; private set; }
+        public User32.MONITORINFOEX MonitorInfo { get; private set; }
+        public MonitorInfoWithHandle(IntPtr monitorHandle, User32.MONITORINFOEX monitorInfo)
+        {
+            MonitorHandle = monitorHandle;
+            MonitorInfo = monitorInfo;
+        }
+    }
+    private static bool MonitorEnum(IntPtr hMonitor, IntPtr hdcMonitor, ref User32.RECT lprcMonitor, IntPtr dwData)
+    {
+        var mi = new User32.MONITORINFOEX();
+        mi.size = (uint)Marshal.SizeOf(mi);
+        User32.GetMonitorInfo(hMonitor, ref mi);
+
+        _monitorInfos.Add(new MonitorInfoWithHandle(hMonitor, mi));
+        return true;
+    }
+    private static List<MonitorInfoWithHandle> GetMonitors()
+    {
+        _monitorInfos = new List<MonitorInfoWithHandle>();
+
+        User32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, MonitorEnum, IntPtr.Zero);
+
+        return _monitorInfos;
+    }
+
+    public static void PrintMonitorInfo()
+    {
+        var mis = GetMonitors();
+        foreach (var mi in mis)
+        {
+            Console.WriteLine("{0}: {1}", mi.MonitorHandle, mi.MonitorInfo.DeviceName);
+        }
     }
 }
