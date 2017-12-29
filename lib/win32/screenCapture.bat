@@ -34,6 +34,39 @@ using System.Collections.Generic;
 using Microsoft.VisualBasic;
 
 
+delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref Rect lprcMonitor, IntPtr dwData);
+
+
+public class DisplayInfoCollection : List<DisplayInfo>
+{
+}
+
+public DisplayInfoCollection GetDisplays()
+{
+  DisplayInfoCollection col = new DisplayInfoCollection();
+
+  EnumDisplayMonitors( IntPtr.Zero, IntPtr.Zero,
+    delegate (IntPtr hMonitor, IntPtr hdcMonitor, ref Rect lprcMonitor,  IntPtr dwData)
+    {
+      MonitorInfo mi = new MonitorInfo();
+      mi.size = (uint)Marshal.SizeOf(mi);
+      bool success = GetMonitorInfo(hMonitor, ref mi);
+      if (success)
+      {
+          DisplayInfo di = new DisplayInfo();
+          di.ScreenWidth = (mi.monitor.right - mi.monitor.left).ToString();
+          di.ScreenHeight = (mi.monitor.bottom - mi.monitor.top).ToString();
+          di.MonitorArea = mi.monitor;
+          di.WorkArea = mi.work;
+          di.Availability = mi.flags.ToString();
+          col.Add(di);
+      }
+      return true;
+    }, IntPtr.Zero );
+ return col;
+}
+
+
 /// Provides functions to capture the entire screen, or a particular window, and save it to a file.
 
 public class ScreenCapture
@@ -257,6 +290,7 @@ public class ScreenCapture
             public int right;
             public int bottom;
         }
+
         [DllImport("user32.dll")]
         public static extern IntPtr GetDesktopWindow();
         [DllImport("user32.dll")]
@@ -267,5 +301,24 @@ public class ScreenCapture
         public static extern IntPtr GetWindowRect(IntPtr hWnd, ref RECT rect);
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
+
+       [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+       struct MONITORINFOEX
+       {
+           public int Size;
+           public RECT Monitor;
+           public RECT WorkArea;
+           public uint Flags;
+           [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+           public string DeviceName;
+       }
+
+       [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+       static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
+
+       delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+       [DllImport("user32.dll")]
+       static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
     }
 }
