@@ -13,7 +13,7 @@ function checkDisplays(t, displays) {
   t.truthy(Array.isArray(displays))
   displays.forEach(disp => {
     t.truthy(disp.name)
-    t.truthy(Number.isInteger(disp.id))
+    t.truthy(disp.id !== undefined)
   })
 }
 

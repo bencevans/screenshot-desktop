@@ -213,9 +213,13 @@ public class ScreenCapture
         Console.WriteLine("     with a title which will put on focus and captuted.");
         Console.WriteLine("     For WindowTitle you can pass only the first few characters.");
         Console.WriteLine("     If don't want to change the current active window pass only \"\"");
+        Console.WriteLine("");
         Console.WriteLine(" " + scriptName + " (/l | /list)");
+        Console.WriteLine("");
         Console.WriteLine("List the available displays");
+        Console.WriteLine("");
         Console.WriteLine(" " + scriptName + " filename  (/d | /display) displayName");
+        Console.WriteLine("");
         Console.WriteLine("filename - as above");
         Console.WriteLine("displayName - a display name optained from running the script with /list");
     }
