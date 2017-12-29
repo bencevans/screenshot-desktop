@@ -329,7 +329,7 @@ public class ScreenCapture
         var mis = GetMonitors();
         foreach (var mi in mis)
         {
-            Console.WriteLine("{0}: {1}", mi.MonitorHandle, mi.MonitorInfo.DeviceName);
+            Console.WriteLine("{0}", mi.MonitorInfo.DeviceName);
         }
     }
 }
