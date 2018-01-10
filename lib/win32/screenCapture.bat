@@ -34,10 +34,14 @@ using System.Collections.Generic;
 using Microsoft.VisualBasic;
 
 
+
 /// Provides functions to capture the entire screen, or a particular window, and save it to a file.
 
 public class ScreenCapture
 {
+
+    static String deviceName = "";
+    static Image capturedImage = null;
 
     /// Creates an Image object containing a screen shot the active window
 
@@ -50,6 +54,15 @@ public class ScreenCapture
 
     public Image CaptureScreen()
     {
+        if (!deviceName.Equals(""))
+        {
+            CaptureSpecificWindow();
+            if (capturedImage != null)
+            {
+                return capturedImage;
+            }
+            Console.WriteLine("Unable to capture image... using main display");
+        }
         return CaptureWindow(User32.GetDesktopWindow());
     }
 
@@ -62,6 +75,13 @@ public class ScreenCapture
         // get the size
         User32.RECT windowRect = new User32.RECT();
         User32.GetWindowRect(handle, ref windowRect);
+
+        Image img = CaptureWindowFromDC(handle, hdcSrc, windowRect);
+        User32.ReleaseDC(handle, hdcSrc);
+        return img;
+    }
+    private static Image CaptureWindowFromDC(IntPtr handle, IntPtr hdcSrc, User32.RECT windowRect){
+        // get the size
         int width = windowRect.right - windowRect.left;
         int height = windowRect.bottom - windowRect.top;
         // create a device context we can copy to
@@ -72,12 +92,11 @@ public class ScreenCapture
         // select the bitmap object
         IntPtr hOld = GDI32.SelectObject(hdcDest, hBitmap);
         // bitblt over
-        GDI32.BitBlt(hdcDest, 0, 0, width, height, hdcSrc, 0, 0, GDI32.SRCCOPY);
+        GDI32.BitBlt(hdcDest, 0, 0, width, height, hdcSrc, windowRect.left, windowRect.top, GDI32.SRCCOPY);
         // restore selection
         GDI32.SelectObject(hdcDest, hOld);
         // clean up
         GDI32.DeleteDC(hdcDest);
-        User32.ReleaseDC(handle, hdcSrc);
         // get a .NET image object for it
         Image img = Image.FromHbitmap(hBitmap);
         // free up the Bitmap object
@@ -101,6 +120,7 @@ public class ScreenCapture
     static String file = "screenshot.bmp";
     static System.Drawing.Imaging.ImageFormat format = System.Drawing.Imaging.ImageFormat.Bmp;
     static String windowTitle = "";
+    static List<MonitorInfoWithHandle> _monitorInfos;
 
     static void parseArguments()
     {
@@ -113,6 +133,11 @@ public class ScreenCapture
         if (arguments[1].ToLower().Equals("/h") || arguments[1].ToLower().Equals("/help"))
         {
             printHelp();
+            Environment.Exit(0);
+        }
+        if (arguments[1].ToLower().Equals("/l") || arguments[1].ToLower().Equals("/list"))
+        {
+            PrintMonitorInfo();
             Environment.Exit(0);
         }
 
@@ -153,8 +178,18 @@ public class ScreenCapture
             Environment.Exit(8);
         }
 
+        if (arguments.Length <= 2){
+            return;
+        }
 
-        if (arguments.Length > 2)
+        if (arguments[2].ToLower().Equals("/d") || arguments[2].ToLower().Equals("/display")){
+            if (arguments.Length == 2) {
+                Console.WriteLine("Must specify a display if passing /display");
+                Environment.Exit(9);
+            }
+            deviceName = arguments[3];
+        }
+        else if (arguments.Length > 2)
         {
             windowTitle = arguments[2];
             fullscreen = false;
@@ -172,12 +207,21 @@ public class ScreenCapture
         Console.WriteLine("Usage:");
         Console.WriteLine(" " + scriptName + " filename  [WindowTitle]");
         Console.WriteLine("");
-        Console.WriteLine("finename - the file where the screen capture will be saved");
+        Console.WriteLine("filename - the file where the screen capture will be saved");
         Console.WriteLine("     allowed file extensions are - Bmp,Emf,Exif,Gif,Icon,Jpeg,Png,Tiff,Wmf.");
         Console.WriteLine("WindowTitle - instead of capture whole screen you can point to a window ");
         Console.WriteLine("     with a title which will put on focus and captuted.");
         Console.WriteLine("     For WindowTitle you can pass only the first few characters.");
         Console.WriteLine("     If don't want to change the current active window pass only \"\"");
+        Console.WriteLine("");
+        Console.WriteLine(" " + scriptName + " (/l | /list)");
+        Console.WriteLine("");
+        Console.WriteLine("List the available displays");
+        Console.WriteLine("");
+        Console.WriteLine(" " + scriptName + " filename  (/d | /display) displayName");
+        Console.WriteLine("");
+        Console.WriteLine("filename - as above");
+        Console.WriteLine("displayName - a display name optained from running the script with /list");
     }
 
     public static void Main()
@@ -247,7 +291,7 @@ public class ScreenCapture
 
     /// Helper class containing User32 API functions
 
-    private class User32
+    public class User32
     {
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -257,6 +301,9 @@ public class ScreenCapture
             public int right;
             public int bottom;
         }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetDC(IntPtr hWnd);
         [DllImport("user32.dll")]
         public static extern IntPtr GetDesktopWindow();
         [DllImport("user32.dll")]
@@ -267,5 +314,78 @@ public class ScreenCapture
         public static extern IntPtr GetWindowRect(IntPtr hWnd, ref RECT rect);
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
+
+       [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+       public struct MONITORINFOEX
+       {
+           public uint size;
+           public RECT Monitor;
+           public RECT WorkArea;
+           public uint Flags;
+           [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+           public string DeviceName;
+       }
+
+       [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+       public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
+
+       public delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+       [DllImport("user32.dll")]
+       public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
+    }
+
+    private class MonitorInfoWithHandle
+    {
+        public IntPtr MonitorHandle { get; private set; }
+        public User32.MONITORINFOEX MonitorInfo { get; private set; }
+        public MonitorInfoWithHandle(IntPtr monitorHandle, User32.MONITORINFOEX monitorInfo)
+        {
+            MonitorHandle = monitorHandle;
+            MonitorInfo = monitorInfo;
+        }
+    }
+    private static bool MonitorEnum(IntPtr hMonitor, IntPtr hdcMonitor, ref User32.RECT lprcMonitor, IntPtr dwData)
+    {
+        var mi = new User32.MONITORINFOEX();
+        mi.size = (uint)Marshal.SizeOf(mi);
+        User32.GetMonitorInfo(hMonitor, ref mi);
+
+        _monitorInfos.Add(new MonitorInfoWithHandle(hMonitor, mi));
+        return true;
+    }
+    private static bool CaptureMonitorEnum(IntPtr hMonitor, IntPtr hdcMonitor, ref User32.RECT lprcMonitor, IntPtr dwData)
+    {
+        var mi = new User32.MONITORINFOEX();
+        mi.size = (uint)Marshal.SizeOf(mi);
+        User32.GetMonitorInfo(hMonitor, ref mi);
+        if (mi.DeviceName.ToLower().Equals(deviceName.ToLower())) {
+            Console.WriteLine("hMonitor is {0}, hdcMonitor is {1}", hMonitor, hdcMonitor);
+            capturedImage = CaptureWindowFromDC(hMonitor, hdcMonitor, lprcMonitor);
+        }
+        return true;
+    }
+    public static void CaptureSpecificWindow()
+    {
+        IntPtr hdc = User32.GetDC(IntPtr.Zero);
+        User32.EnumDisplayMonitors(hdc, IntPtr.Zero, CaptureMonitorEnum, IntPtr.Zero);
+        User32.ReleaseDC(IntPtr.Zero, hdc);
+    }
+    private static List<MonitorInfoWithHandle> GetMonitors()
+    {
+        _monitorInfos = new List<MonitorInfoWithHandle>();
+
+        User32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, MonitorEnum, IntPtr.Zero);
+
+        return _monitorInfos;
+    }
+
+    public static void PrintMonitorInfo()
+    {
+        var mis = GetMonitors();
+        foreach (var mi in mis)
+        {
+            Console.WriteLine("{0}", mi.MonitorInfo.DeviceName);
+        }
     }
 }
