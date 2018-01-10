@@ -7,7 +7,7 @@
   * OSX: No dependencies required!
   * Windows: No dependencies required!
 * Promise based API
-* JPG output
+* JPG output (by default)
 
 ## Install
 
@@ -24,6 +24,32 @@ screenshot().then((img) => {
 }).catch((err) => {
   // ...
 })
+```
+
+```js
+screenshot.listDisplays().then((displays) => {
+  // displays: [{ id, name }, { id, name }]
+  screenshot({ screen: displays[displays.length - 1].id })
+    .then((img) => {
+      // img: Buffer of screenshot of the last display
+    });
+})
+```
+
+```js
+screenshot.all().then((imgs) => {
+  // imgs: an array of Buffers, one for each screen
+})
+```
+
+```js
+screenshot({ filename: 'shot.jpg' }).then((imgPath) => {
+  // imgPath: absolute path to screenshot
+  // created in current working directory named shot.png
+});
+
+// absolute paths work too. so do pngs
+screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 ```
 
 ## Licence
