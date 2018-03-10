@@ -7,7 +7,7 @@ notifications:
 node_js:
   - '9'
 script:
-  - echo "Passing to semantic-release..."
+  - npm run lint
 after_success:
   - npm run travis-deploy-once "npm run semantic-release"
 branches:
