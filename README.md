@@ -1,5 +1,7 @@
 # screenshot-desktop
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/bencevans/screenshot-desktop.svg)](https://greenkeeper.io/)
+
 > Capture a screenshot of your local machine
 
 * Multi/Cross Platform
