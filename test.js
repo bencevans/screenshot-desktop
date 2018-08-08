@@ -27,6 +27,8 @@ test('screenshot each display', t => {
         screenshot(display.id)
       })
     })
+  } else {
+    t.pass()
   }
 })
 
