@@ -1,13 +1,19 @@
 language: node_js
+os:
+  - windows
+  - linux
+  - osx
 cache:
   directories:
     - ~/.npm
 notifications:
   email: false
 node_js:
-  - '9'
+  - '10'
+  - '8'
 script:
   - npm run lint
+  - npm run test
 after_success:
   - npm run travis-deploy-once "npm run semantic-release"
 branches:
