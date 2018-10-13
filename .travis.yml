@@ -11,8 +11,6 @@ notifications:
 node_js:
   - '10'
   - '8'
-before_install:
-  - "if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16; fi"
 script:
   - npm run lint
   - npm run test
