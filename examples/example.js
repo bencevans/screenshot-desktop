@@ -6,10 +6,8 @@ screenshot().then((img) => {
     if (err) {
       throw err
     }
-
     console.log('written to out.jpg')
   })
+}).catch((err) => {
+  throw err
 })
-  .catch((err) => {
-    throw err
-  })
