@@ -8,7 +8,7 @@
     "temp": "^0.9.0"
   },
   "devDependencies": {
-    "ava": "1.0.1",
+    "ava": "1.1.0",
     "semantic-release": "15.13.3",
     "standard": "12.0.1",
     "travis-deploy-once": "5.0.11"
