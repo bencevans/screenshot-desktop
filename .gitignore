@@ -4,3 +4,4 @@ out.jpg
 *.log
 *.png
 package-lock.json
+.vscode
