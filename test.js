@@ -44,7 +44,7 @@ test('screenshot to a file', t => {
 test('screenshot specific screen to a file', t => {
   t.plan(1)
   const tmpName = tmpNameSync()
-  return screenshot({ filename: tmpName, screen: 0}).then(() => {
+  return screenshot({ filename: tmpName, screen: 0 }).then(() => {
     t.truthy(existsSync(tmpName))
     unlinkSync(tmpName)
   })
