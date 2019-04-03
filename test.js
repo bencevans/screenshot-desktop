@@ -41,6 +41,15 @@ test('screenshot to a file', t => {
   })
 })
 
+test('screenshot specific screen to a file', t => {
+  t.plan(1)
+  const tmpName = tmpNameSync({ screen: 0 })
+  return screenshot({ filename: tmpName }).then(() => {
+    t.truthy(existsSync(tmpName))
+    unlinkSync(tmpName)
+  })
+})
+
 test('screenshot to a file with a space', t => {
   // https://github.com/bencevans/screenshot-desktop/issues/12
   t.plan(1)
