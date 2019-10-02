@@ -67,6 +67,7 @@ screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 
 - `filename` Optional. Absolute or relative path to save output.
 - `format` Optional. Valid values `png|jpg`. 
+- `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support format or screen selection.
 
 ## Licence
 
