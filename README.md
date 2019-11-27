@@ -27,6 +27,17 @@ screenshot().then((img) => {
 ```
 
 ```js
+const screenshot = require('screenshot-desktop')
+
+screenshot({format: 'png'}).then((img) => {
+  // img: Buffer filled with png goodness
+  // ...
+}).catch((err) => {
+  // ...
+})
+```
+
+```js
 screenshot.listDisplays().then((displays) => {
   // displays: [{ id, name }, { id, name }]
   screenshot({ screen: displays[displays.length - 1].id })
@@ -51,6 +62,12 @@ screenshot({ filename: 'shot.jpg' }).then((imgPath) => {
 // absolute paths work too. so do pngs
 screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 ```
+
+## screenshot() options
+
+- `filename` Optional. Absolute or relative path to save output.
+- `format` Optional. Valid values `png|jpg`. 
+- `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support format or screen selection.
 
 ## Licence
 
