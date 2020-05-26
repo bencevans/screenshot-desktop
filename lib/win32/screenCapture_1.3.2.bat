@@ -2,7 +2,7 @@
 /*
 :batch
 @echo off
-setlocal
+setlocal enableDelayedExpansion
 
 :: find csc.exe
 set "csc="
@@ -15,7 +15,7 @@ if not exist "%csc%" (
 
 if not exist "%~n0.exe" (
    call %csc% /nologo /r:"Microsoft.VisualBasic.dll" /win32manifest:"app.manifest" /out:"%~n0.exe" "%~dpsfnx0" || (
-      exit /b %errorlevel%
+      exit /b !errorlevel!
    )
 )
 %~n0.exe %*
