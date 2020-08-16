@@ -5,7 +5,8 @@ cache:
 notifications:
   email: false
 node_js:
-  - '9'
+  - '12'
+  - '14'
 script:
   - npm run lint
 after_success:
