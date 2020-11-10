@@ -1,11 +1,11 @@
 const test = require('ava')
-const { path:tempPathSync } = require('temp')
+const { path: tempPathSync } = require('temp')
 const { existsSync, unlinkSync } = require('fs')
 const screenshot = require('./')
 
 test.before(async () => {
   return screenshot.listDisplays().then(displays => {
-    console.log(`Displays:`, JSON.stringify(displays, null, 2), '\n')
+    console.log('Displays:', JSON.stringify(displays, null, 2), '\n')
   })
 })
 
@@ -49,7 +49,7 @@ test('screenshot to a file', t => {
 
 test('screenshot specific screen to a file', t => {
   t.plan(1)
-  const tmpName = tempPathSync({ suffix: '.jpg'})
+  const tmpName = tempPathSync({ suffix: '.jpg' })
   return screenshot({ filename: tmpName, screen: 0 }).then(() => {
     t.truthy(existsSync(tmpName))
     unlinkSync(tmpName)
