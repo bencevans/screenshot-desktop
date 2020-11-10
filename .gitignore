@@ -3,5 +3,4 @@ out.jpg
 *.exe
 *.log
 *.png
-package-lock.json
 .vscode
