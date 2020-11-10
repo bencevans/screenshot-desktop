@@ -1,7 +1,7 @@
-import test from 'ava'
-import { tmpNameSync } from 'tmp'
-import { existsSync, unlinkSync } from 'fs'
-import screenshot from './'
+const test = require('ava')
+const { tmpNameSync } = require('tmp')
+const { existsSync, unlinkSync } = require('fs')
+const screenshot = require('./')
 
 test('screenshot', t => {
   t.plan(1)
