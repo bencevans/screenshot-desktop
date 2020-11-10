@@ -1,7 +1,7 @@
-import test from 'ava'
-import { tmpNameSync } from 'tmp'
-import { existsSync, unlinkSync } from 'fs'
-import screenshot from './'
+const test = require('ava')
+const { tmpNameSync } = require('tmp')
+const { existsSync, unlinkSync } = require('fs')
+const screenshot = require('./')
 
 test('screenshot', t => {
   t.plan(1)
@@ -43,7 +43,7 @@ test('screenshot to a file', t => {
 
 test('screenshot specific screen to a file', t => {
   t.plan(1)
-  const tmpName = tmpNameSync()
+  const tmpName = tmpNameSync({ postfix: '.jpg'})
   return screenshot({ filename: tmpName, screen: 0 }).then(() => {
     t.truthy(existsSync(tmpName))
     unlinkSync(tmpName)
