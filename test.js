@@ -3,6 +3,12 @@ const { tmpNameSync } = require('tmp')
 const { existsSync, unlinkSync } = require('fs')
 const screenshot = require('./')
 
+test.before(async () => {
+  return screenshot.listDisplays().then(displays => {
+    console.log(`Displays:`, JSON.stringify(displays, null, 2), '\n')
+  })
+})
+
 test('screenshot', t => {
   t.plan(1)
   return screenshot().then(img => {
