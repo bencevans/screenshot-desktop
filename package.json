@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "ava": "^3.15.0",
-    "semantic-release": "^17.3.7",
+    "semantic-release": "^17.3.9",
     "standard": "^16.0.3",
     "travis-deploy-once": "5.0.11"
   },
