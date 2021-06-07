@@ -12,6 +12,9 @@
     "semantic-release": "^17.4.3",
     "standard": "^16.0.3"
   },
+  "ava": {
+    "timeout": "1m"
+  },
   "scripts": {
     "test": "ava",
     "semantic-release": "semantic-release",
