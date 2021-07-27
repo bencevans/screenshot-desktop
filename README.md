@@ -68,6 +68,11 @@ screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 - `filename` Optional. Absolute or relative path to save output.
 - `format` Optional. Valid values `png|jpg`. 
 - `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support format or screen selection.
+- `dirname` Optional. Windows only. Absolute path to the win32 folder (`C:\your\project\node_modules\screenshot-desktop\lib\win32`). Usefull when used inside a webpack project.
+
+## screenshot.listDisplays() options
+
+- `dirname` Optional. Windows only. Absolute path to the win32 folder (`C:\your\project\node_modules\screenshot-desktop\lib\win32`). Usefull when used inside a webpack project.
 
 ## Licence
 
