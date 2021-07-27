@@ -74,6 +74,10 @@ screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 
 - `dirname` Optional. Windows only. Absolute path to the win32 folder (`C:\your\project\node_modules\screenshot-desktop\lib\win32`). Usefull when used inside a webpack project.
 
+## screenshot.all() options
+
+- `dirname` Optional. Windows only. Absolute path to the win32 folder (`C:\your\project\node_modules\screenshot-desktop\lib\win32`). Usefull when used inside a webpack project.
+
 ## Licence
 
 MIT &copy; [Ben Evans](https://bencevans.io)
