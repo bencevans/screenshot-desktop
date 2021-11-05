@@ -37,5 +37,11 @@
   "bugs": {
     "url": "https://github.com/bencevans/screenshot-desktop/issues"
   },
-  "homepage": "https://github.com/bencevans/screenshot-desktop#readme"
+  "homepage": "https://github.com/bencevans/screenshot-desktop#readme",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/bencevans"
+    }
+  ]
 }
