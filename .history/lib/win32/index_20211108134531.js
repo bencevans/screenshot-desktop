@@ -11,24 +11,7 @@ const {
   defaultAll
 } = utils
 
-function copyToTemp() {
-  const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.2.bat')
-  const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
-  const includeBat = path.join(__dirname, 'screenCapture_1.3.2.bat').replace('app.asar', 'app.asar.unpacked')
-  const includeManifest = path.join(__dirname, 'app.manifest').replace('app.asar', 'app.asar.unpacked')
-  if (!fs.existsSync(tmpBat)) {
-    fs.mkdirSync(path.join(os.tmpdir(), 'screenCapture'))
-    const sourceData = {
-      bat: fs.readFileSync(includeBat),
-      manifest: fs.readFileSync(includeManifest)
-    }
-    fs.writeFileSync(tmpBat, sourceData.bat)
-    fs.writeFileSync(tmpManifest, sourceData.manifest)
-  }
-  return tmpBat
-}
-
-function windowsSnapshot(options = {}) {
+function windowsSnapshot (options = {}) {
   return new Promise((resolve, reject) => {
     const displayName = options.screen
     const format = options.format || 'jpg'
@@ -39,7 +22,20 @@ function windowsSnapshot(options = {}) {
 
     const displayChoice = displayName ? ` /d "${displayName}"` : ''
 
-    const tmpBat = copyToTemp()
+    const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.2.bat')
+    const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
+    const includeBat = path.join(__dirname, 'screenCapture_1.3.2.bat').replace('app.asar', 'app.asar.unpacked')
+    const includeManifest = path.join(__dirname, 'app.manifest').replace('app.asar', 'app.asar.unpacked')
+    console.log(tmpBat, tmpManifest, includeBat, includeManifest)
+    if (!fs.existsSync(tmpBat)) {
+      fs.mkdirSync(path.join(os.tmpdir(), 'screenCapture'))
+      const sourceData = {
+        bat: fs.readFileSync(includeBat),
+        manifest: fs.readFileSync(includeManifest)
+      }
+      fs.writeFileSync(tmpBat, sourceData.bat)
+      fs.writeFileSync(tmpManifest, sourceData.manifest)
+    }
 
     exec('"' + tmpBat + '" "' + imgPath + '" ' + displayChoice, {
       cwd: path.join(os.tmpdir(), 'screenCapture'),
@@ -62,7 +58,7 @@ function windowsSnapshot(options = {}) {
 
 const EXAMPLE_DISPLAYS_OUTPUT = '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0\r\n\\.\\DISPLAY2;0;3840;1080;1920\r\n'
 
-function parseDisplaysOutput(output) {
+function parseDisplaysOutput (output) {
   const displaysStartPattern = /2>nul {2}\|\| /
   const {
     0: match,
@@ -88,13 +84,12 @@ function parseDisplaysOutput(output) {
     }))
 }
 
-function listDisplays() {
+function listDisplays () {
   return new Promise((resolve, reject) => {
-    const tmpBat = copyToTemp()
     exec(
-      '"' + tmpBat + '" /list', {
-      cwd: path.join(os.tmpdir(), 'screenCapture')
-    },
+      '"' + path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'screenCapture_1.3.2.bat') + '" /list', {
+        cwd: __dirname.replace('app.asar', 'app.asar.unpacked')
+      },
       (err, stdout) => {
         if (err) {
           return reject(err)

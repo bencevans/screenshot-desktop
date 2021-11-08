@@ -16,6 +16,7 @@ function copyToTemp() {
   const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
   const includeBat = path.join(__dirname, 'screenCapture_1.3.2.bat').replace('app.asar', 'app.asar.unpacked')
   const includeManifest = path.join(__dirname, 'app.manifest').replace('app.asar', 'app.asar.unpacked')
+  console.log(tmpBat, tmpManifest, includeBat, includeManifest)
   if (!fs.existsSync(tmpBat)) {
     fs.mkdirSync(path.join(os.tmpdir(), 'screenCapture'))
     const sourceData = {
@@ -90,10 +91,9 @@ function parseDisplaysOutput(output) {
 
 function listDisplays() {
   return new Promise((resolve, reject) => {
-    const tmpBat = copyToTemp()
     exec(
-      '"' + tmpBat + '" /list', {
-      cwd: path.join(os.tmpdir(), 'screenCapture')
+      '"' + path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'screenCapture_1.3.2.bat') + '" /list', {
+      cwd: __dirname.replace('app.asar', 'app.asar.unpacked')
     },
       (err, stdout) => {
         if (err) {
