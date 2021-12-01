@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "ava": "^3.15.0",
-    "semantic-release": "^18.0.0",
+    "semantic-release": "^18.0.1",
     "standard": "^16.0.4"
   },
   "ava": {
