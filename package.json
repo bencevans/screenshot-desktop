@@ -8,7 +8,7 @@
     "temp": "^0.9.4"
   },
   "devDependencies": {
-    "ava": "^4.0.1",
+    "ava": "^4.1.0",
     "semantic-release": "^19.0.2",
     "standard": "^16.0.4"
   },
