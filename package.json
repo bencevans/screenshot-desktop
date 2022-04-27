@@ -10,7 +10,7 @@
   "devDependencies": {
     "ava": "^4.2.0",
     "semantic-release": "^19.0.2",
-    "standard": "^16.0.4"
+    "standard": "^17.0.0"
   },
   "ava": {
     "timeout": "1m"
