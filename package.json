@@ -43,5 +43,10 @@
       "type": "github",
       "url": "https://github.com/sponsors/bencevans"
     }
-  ]
+  ],
+  "release": {
+    "branches": [
+      "main"
+    ]
+  }
 }
