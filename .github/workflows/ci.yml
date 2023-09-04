@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install xrandr
         run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils
         if: runner.os == 'Linux'
