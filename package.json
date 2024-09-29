@@ -1,6 +1,6 @@
 {
-  "name": "screenshot-desktop",
-  "version": "1.15.0",
+  "name": "screenshot-desktop-wayland",
+  "version": "1.15.1",
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
   "dependencies": {
@@ -28,18 +28,19 @@
     "screen",
     "desktop",
     "laptop",
-    "x11"
+    "x11",
+    "wayland"
   ],
-  "author": "Ben Evans <ben@bensbit.co.uk> (https://bencevans.io)",
+  "author": "Thomas Weissel <valueerror@gmail.com> (https://xapient.solutions)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/bencevans/screenshot-desktop/issues"
+    "url": "https://github.com/valueerrorx/screenshot-desktop-wayland/issues"
   },
-  "homepage": "https://github.com/bencevans/screenshot-desktop#readme",
+  "homepage": "https://github.com/valueerrorx/screenshot-desktop-wayland#readme",
   "funding": [
     {
       "type": "github",
-      "url": "https://github.com/sponsors/bencevans"
+      "url": "https://github.com/valueerrorx/"
     }
   ],
   "release": {

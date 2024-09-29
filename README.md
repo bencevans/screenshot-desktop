@@ -1,9 +1,9 @@
-# screenshot-desktop
+# screenshot-desktop-wayland
 
 > Capture a screenshot of your local machine
 
 * Multi/Cross Platform
-  * Linux: required ImageMagick `apt-get install imagemagick`
+  * Linux: required ImageMagick `apt-get install imagemagick` or Flameshot `apt-get install flameshot`
   * OSX: No dependencies required!
   * Windows: No dependencies required!
 * Promise based API
@@ -11,12 +11,13 @@
 
 ## Install
 
-    $ npm install --save screenshot-desktop
+    $ npm install --save screenshot-desktop-wayland
 
 ## Usage
 
 ```js
-const screenshot = require('screenshot-desktop')
+
+import screenshot from 'screenshot-desktop-wayland'
 
 screenshot().then((img) => {
   // img: Buffer filled with jpg goodness
@@ -27,7 +28,8 @@ screenshot().then((img) => {
 ```
 
 ```js
-const screenshot = require('screenshot-desktop')
+import screenshot from 'screenshot-desktop-wayland'
+
 
 screenshot({format: 'png'}).then((img) => {
   // img: Buffer filled with png goodness
