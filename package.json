@@ -4,7 +4,6 @@
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
   "dependencies": {
-    "execa": "^9.5.2",
     "temp": "^0.9.4"
   },
   "devDependencies": {
