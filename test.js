@@ -43,7 +43,7 @@ test('screenshot to a file', t => {
   const tmpName = tempPathSync({ suffix: '.jpg' })
   return screenshot({ filename: tmpName }).then(() => {
     t.truthy(existsSync(tmpName))
-    unlinkSync(tmpName)
+    if (existsSync(tmpName)) unlinkSync(tmpName)
   })
 })
 
@@ -52,7 +52,7 @@ test('screenshot specific screen to a file', t => {
   const tmpName = tempPathSync({ suffix: '.jpg' })
   return screenshot({ filename: tmpName, screen: 0 }).then(() => {
     t.truthy(existsSync(tmpName))
-    unlinkSync(tmpName)
+    if (existsSync(tmpName)) unlinkSync(tmpName)
   })
 })
 
@@ -62,7 +62,7 @@ test('screenshot to a file with a space', t => {
   const tmpName = tempPathSync({ suffix: '.jpg' })
   return screenshot({ filename: tmpName }).then(() => {
     t.truthy(existsSync(tmpName))
-    unlinkSync(tmpName)
+    if (existsSync(tmpName)) unlinkSync(tmpName)
   })
 })
 
