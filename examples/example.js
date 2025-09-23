@@ -1,4 +1,4 @@
-const screenshot = require('./')
+const screenshot = require('../')
 const fs = require('fs')
 
 screenshot().then((img) => {
