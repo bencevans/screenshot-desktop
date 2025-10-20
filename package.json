@@ -1,6 +1,6 @@
 {
   "name": "screenshot-desktop",
-  "version": "1.15.2",
+  "version": "1.15.3",
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
   "dependencies": {
