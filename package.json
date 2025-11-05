@@ -1,6 +1,6 @@
 {
   "name": "screenshot-desktop-wayland",
-  "version": "1.15.5",
+  "version": "1.15.6",
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
   "dependencies": {
