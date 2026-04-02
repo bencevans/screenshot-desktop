@@ -15,7 +15,6 @@
   },
   "scripts": {
     "test": "ava",
-    "test:windows": "node windows-space.test.js",
     "semantic-release": "semantic-release",
     "lint": "standard"
   },
