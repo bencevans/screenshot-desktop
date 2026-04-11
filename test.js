@@ -72,3 +72,13 @@ test('parse display output', t => {
     checkDisplays(t, disps)
   }
 })
+
+
+test('custom resolution output', t => {
+  t.plan(1)
+  const tmpName = tempPathSync({ suffix: '.jpg' })
+  return screenshot({ filename: tmpName, height: 500, width: 500 }).then(() => {
+    t.truthy(existsSync(tmpName))
+    if (existsSync(tmpName)) unlinkSync(tmpName)
+  })
+})
