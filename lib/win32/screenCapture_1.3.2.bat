@@ -29,6 +29,7 @@ endlocal & exit /b %errorlevel%
 using System;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Collections.Generic;
 using Microsoft.VisualBasic;
@@ -43,11 +44,16 @@ public class ScreenCapture
     static String deviceName = "";
     static Image capturedImage = null;
 
+    static int targetHeight = 0;
+    static int targetWidth = 0;
+
     /// Creates an Image object containing a screen shot the active window
 
     public Image CaptureActiveWindow()
     {
-        return CaptureWindow(User32.GetForegroundWindow());
+        Image img = CaptureWindow(User32.GetForegroundWindow());
+
+        return img;
     }
 
     /// Creates an Image object containing a screen shot of the entire desktop
@@ -63,7 +69,33 @@ public class ScreenCapture
             }
             Console.WriteLine("Unable to capture image... using main display");
         }
-        return CaptureWindow(User32.GetDesktopWindow());
+
+        Image img = CaptureWindow(User32.GetDesktopWindow());
+        img = ScaleImage(img);
+
+        return img;
+    }
+
+    //Convert the full resolution image into a smaller one
+    static Image ScaleImage(Image image)
+    {
+        if(targetWidth == 0 || targetHeight == 0) return image;
+
+        int originalWidth = image.Width;
+        int originalHeight = image.Height;
+
+        Image scaledImage = new Bitmap(targetWidth, targetHeight);
+        Graphics graphic = Graphics.FromImage(scaledImage);
+
+        graphic.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        graphic.SmoothingMode = SmoothingMode.HighQuality;
+        graphic.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        graphic.CompositingQuality = CompositingQuality.HighQuality;
+
+        graphic.Clear(Color.Transparent);
+        graphic.DrawImage(image, 0, 0, targetWidth, targetHeight);
+
+        return scaledImage;
     }
 
     /// Creates an Image object containing a screen shot of a specific window
@@ -78,6 +110,7 @@ public class ScreenCapture
 
         Image img = CaptureWindowFromDC(handle, hdcSrc, windowRect);
         User32.ReleaseDC(handle, hdcSrc);
+
         return img;
     }
     private static Image CaptureWindowFromDC(IntPtr handle, IntPtr hdcSrc, User32.RECT windowRect){
@@ -101,6 +134,7 @@ public class ScreenCapture
         Image img = Image.FromHbitmap(hBitmap);
         // free up the Bitmap object
         GDI32.DeleteObject(hBitmap);
+
         return img;
     }
 
@@ -124,7 +158,12 @@ public class ScreenCapture
 
     static void parseArguments()
     {
+        //REFACTOR THIS TO ALLOW DYNAMIC ARGUMENTS ORDER
+        //IT IS HARDCODED
+
         String[] arguments = Environment.GetCommandLineArgs();
+        Console.WriteLine(arguments.Length);
+
         if (arguments.Length == 1)
         {
             printHelp();
@@ -189,12 +228,23 @@ public class ScreenCapture
             }
             deviceName = arguments[3];
         }
-        else if (arguments.Length > 2)
+        else if (arguments.Length > 2 && arguments.Length != 6)
         {
             windowTitle = arguments[2];
             fullscreen = false;
         }
 
+        if (arguments.Length <= 5){
+            return;
+        }
+
+        if (arguments[2].ToLower().Equals("/rw") || arguments[2].ToLower().Equals("/width")){
+            targetWidth = int.Parse(arguments[3]);
+        }
+
+        if (arguments[4].ToLower().Equals("/rh") || arguments[4].ToLower().Equals("/height")){
+            targetHeight = int.Parse(arguments[5]);
+        }
     }
 
     static void printHelp()
