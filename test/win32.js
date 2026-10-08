@@ -66,3 +66,12 @@ test.serial('passes an exact Windows display id to the capture command', async t
     fs.copyFile = originalCopyFile
   }
 })
+
+test.serial('rejects when the Windows display list output is not recognized', async t => {
+  // A real exec callback runs after the Promise executor has returned.
+  execImpl = (command, options, callback) => {
+    setImmediate(() => callback(null, `\r\n${displayId};0;1920;1080;0;1\r\n`, ''))
+  }
+
+  await t.throwsAsync(windowsSnapshot.listDisplays(), { instanceOf: TypeError })
+})
