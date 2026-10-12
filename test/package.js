@@ -12,7 +12,8 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
   try {
     const result = JSON.parse(execFileSync(process.execPath, [
       process.env.npm_execpath,
-      'pack', '--json', '--pack-destination', fixture,
+      // pretest already built the package; rebuilding here races other AVA workers.
+      'pack', '--ignore-scripts', '--json', '--pack-destination', fixture,
       '--cache', path.join(fixture, 'cache')
     ], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }))
     const packed = Array.isArray(result) ? result[0] : Object.values(result)[0]

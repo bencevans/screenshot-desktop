@@ -67,13 +67,24 @@ test.serial('passes an exact Windows display id to the capture command', async t
   }
 })
 
-test.serial('rejects when the Windows display list output is not recognized', async t => {
-  // A real exec callback runs after the Promise executor has returned.
+test.serial('lists displays when the command echo header is absent', async t => {
   execFileImpl = (file, args, options, callback) => {
-    setImmediate(() => callback(null, `\r\n${displayId};0;1920;1080;0;1\r\n`, ''))
+    setImmediate(() => callback(null, `${displayId};0;1920;1080;0;1\r\n`, ''))
   }
 
-  await t.throwsAsync(windowsSnapshot.listDisplays(), { instanceOf: TypeError })
+  const displays = await windowsSnapshot.listDisplays()
+  t.is(displays[0].id, displayId)
+  t.is(displays[0].width, 1920)
+})
+
+test.serial('rejects unrecognized helper output with a useful error', async t => {
+  execFileImpl = (file, args, options, callback) => {
+    setImmediate(() => callback(null, 'unexpected helper diagnostics', ''))
+  }
+
+  await t.throwsAsync(windowsSnapshot.listDisplays(), {
+    message: 'No Windows display records found in screenshot helper output'
+  })
 })
 
 test.serial('keeps temporary directory paths out of Windows commands', async t => {
