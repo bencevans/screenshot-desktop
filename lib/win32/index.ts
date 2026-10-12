@@ -9,7 +9,13 @@ import assets = require('./assets')
 
 const { withTemporaryDirectory, defaultAll } = utils
 
-function copyToTemp () {
+/**
+ * Extract embedded helper assets into the shared Windows helper cache.
+ * The batch file and manifest must be real files for cmd.exe and the C# compiler.
+ * Restore both assets if either is missing; keep the cache for later captures.
+ * @returns Absolute path to the executable batch helper.
+ */
+function copyToTemp() {
   const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.3.bat')
   const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
   if (!fs.existsSync(tmpBat) || !fs.existsSync(tmpManifest)) {
@@ -29,11 +35,20 @@ function copyToTemp () {
   return tmpBat
 }
 
-function windowsSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-function windowsSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
-function windowsSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
-function windowsSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
-function windowsSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
+/**
+ * Capture the Windows desktop or a validated display using the batch helper.
+ * Returns image bytes, or an absolute saved path for a nonempty filename.
+ * Each capture owns a private directory inside the shared helper cache.
+ * Caller filenames are copied via filesystem APIs and never passed to cmd.exe.
+ * @param options - Output format, destination and operating-system display ID.
+ */
+function windowsSnapshot(options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
+function windowsSnapshot<const F extends string>(
+  options: Omit<ScreenshotOptions, 'filename'> & { filename: F }
+): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
+function windowsSnapshot(options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
+function windowsSnapshot(options: ScreenshotOptions): Promise<Buffer | string>
+function windowsSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | string> {
   return new Promise<Buffer | string>((resolve, reject) => {
     // Validate format
     const allowedFormats = ['jpg', 'jpeg', 'png', 'bmp']
@@ -60,50 +75,63 @@ function windowsSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | str
     // identifiers returned by the operating system.
     const displayValidation = displayName
       ? listDisplays().then(displays => {
-        if (!displays.some(display => display.id === displayName)) {
-          throw new Error('Invalid screen')
-        }
-      })
+          if (!displays.some(display => display.id === displayName)) {
+            throw new Error('Invalid screen')
+          }
+        })
       : Promise.resolve()
 
     displayValidation
       .then(() => {
         const tmpBat = copyToTemp()
         const tmpDir = path.dirname(tmpBat)
-        return withTemporaryDirectory('capture-', async directory => {
-          const imgPath = path.join(directory, `capture.${format}`)
-          // Use a generated relative path so temporary directory characters
-          // never enter cmd.exe argument expansion.
-          const batArgs = [path.relative(tmpDir, imgPath)]
-          if (displayName) batArgs.push('/d', displayName)
-          await new Promise<void>((resolve, reject) => {
-            childProcess.execFile('cmd.exe', ['/d', '/c', path.basename(tmpBat), ...batArgs], {
-              cwd: tmpDir,
-              windowsHide: true
-            }, err => err ? reject(err) : resolve())
-          })
-          if (requestedPath) {
+        return withTemporaryDirectory(
+          'capture-',
+          async directory => {
+            const imgPath = path.join(directory, `capture.${format}`)
+            // Use a generated relative path so temporary directory characters
+            // never enter cmd.exe argument expansion.
+            const batArgs = [path.relative(tmpDir, imgPath)]
+            if (displayName) batArgs.push('/d', displayName)
             await new Promise<void>((resolve, reject) => {
-              fs.copyFile(imgPath, requestedPath!, err => err ? reject(err) : resolve())
+              childProcess.execFile(
+                'cmd.exe',
+                ['/d', '/c', path.basename(tmpBat), ...batArgs],
+                {
+                  cwd: tmpDir,
+                  windowsHide: true
+                },
+                err => (err ? reject(err) : resolve())
+              )
             })
-            return requestedPath
-          }
-          return fs.promises.readFile(imgPath)
-        }, tmpDir).then(resolve)
+            if (requestedPath) {
+              await new Promise<void>((resolve, reject) => {
+                fs.copyFile(imgPath, requestedPath!, err => (err ? reject(err) : resolve()))
+              })
+              return requestedPath
+            }
+            return fs.promises.readFile(imgPath)
+          },
+          tmpDir
+        ).then(resolve)
       })
       .catch(reject)
   })
 }
 
-const EXAMPLE_DISPLAYS_OUTPUT = '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0\r\n\\.\\DISPLAY2;0;3840;1080;1920\r\n'
+const EXAMPLE_DISPLAYS_OUTPUT =
+  '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0\r\n\\.\\DISPLAY2;0;3840;1080;1920\r\n'
 
-function parseDisplaysOutput (output: string): WindowsDisplay[] {
+/**
+ * Parse helper display records after its command-echo header.
+ * Accept either a comma or period as the DPI decimal separator.
+ * @param output - Raw stdout from the batch helper with `/list`.
+ */
+function parseDisplaysOutput(output: string): WindowsDisplay[] {
   const displaysStartPattern = /2>nul {2}\|\| /
-  const {
-    0: match,
-    index
-  } = displaysStartPattern.exec(output)!
-  return output.slice(index + match.length)
+  const { 0: match, index } = displaysStartPattern.exec(output)!
+  return output
+    .slice(index + match.length)
     .split('\n')
     .map(s => s.replace(/[\n\r]/g, ''))
     .map(s => s.match(/(.*?);(.?\d+);(.?\d+);(.?\d+);(.?\d+);(.?\d*[\.,]?\d+)/)) // eslint-disable-line
@@ -117,17 +145,25 @@ function parseDisplaysOutput (output: string): WindowsDisplay[] {
       left: +m[5],
       dpiScale: +m[6].replace(',', '.')
     }))
-    .map(d => Object.assign(d, {
-      height: d.bottom - d.top,
-      width: d.right - d.left
-    }))
+    .map(d =>
+      Object.assign(d, {
+        height: d.bottom - d.top,
+        width: d.right - d.left
+      })
+    )
 }
 
-function listDisplays (): Promise<WindowsDisplay[]> {
+/**
+ * Run the extracted helper to discover Windows display IDs and geometry.
+ * Execution and malformed-output errors reject the call.
+ */
+function listDisplays(): Promise<WindowsDisplay[]> {
   return new Promise((resolve, reject) => {
     const tmpBat = copyToTemp()
     childProcess.execFile(
-      'cmd.exe', ['/d', '/c', path.basename(tmpBat), '/list'], {
+      'cmd.exe',
+      ['/d', '/c', path.basename(tmpBat), '/list'],
+      {
         cwd: path.dirname(tmpBat),
         windowsHide: true
       },
@@ -140,7 +176,8 @@ function listDisplays (): Promise<WindowsDisplay[]> {
         } catch (parseErr) {
           reject(parseErr)
         }
-      })
+      }
+    )
   })
 }
 

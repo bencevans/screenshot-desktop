@@ -7,6 +7,7 @@
     "@types/node": "^20.19.0",
     "ava": "^7.0.0",
     "esbuild": "^0.28.2",
+    "prettier": "3.9.10",
     "standard": "^17.0.0",
     "typescript": "^5.9.3"
   },
@@ -16,10 +17,12 @@
   "scripts": {
     "test": "ava",
     "semantic-release": "semantic-release",
-    "lint": "standard \"test/**/*.js\" && tsc --noEmit",
+    "lint": "npm run format:check && tsc --noEmit",
     "build": "node scripts/build-windows-assets.cjs && tsc",
     "pretest": "npm run build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "format": "prettier --write \"index.ts\" \"lib/**/*.ts\" && standard --fix \"test/**/*.js\" \"examples/**/*.{js,mjs}\" \"scripts/**/*.cjs\"",
+    "format:check": "prettier --check \"index.ts\" \"lib/**/*.ts\" && standard \"test/**/*.js\" \"examples/**/*.{js,mjs}\" \"scripts/**/*.cjs\""
   },
   "repository": {
     "type": "git",

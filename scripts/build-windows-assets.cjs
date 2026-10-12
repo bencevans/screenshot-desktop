@@ -1,3 +1,8 @@
+/**
+ * Generate the TypeScript asset module from the Windows helper's exact bytes.
+ * Base64 keeps encoding and line endings intact through compilation and bundling.
+ * The generated module is build output and must not be edited or committed.
+ */
 const fs = require('fs')
 const path = require('path')
 

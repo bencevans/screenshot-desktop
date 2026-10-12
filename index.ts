@@ -1,5 +1,9 @@
 import type { Screenshot } from './lib/types'
 
+/**
+ * Capture implementation selected for the current operating system.
+ * The callable export also exposes display discovery and multi-display capture.
+ */
 let screenshot: Screenshot
 if (process.platform === 'linux') {
   screenshot = require('./lib/linux')
@@ -8,11 +12,14 @@ if (process.platform === 'linux') {
 } else if (process.platform === 'win32') {
   screenshot = require('./lib/win32')
 } else {
-  screenshot = function unSupported () {
+  screenshot = function unSupported() {
     return Promise.reject(new Error('Currently unsupported platform. Pull requests welcome!'))
   } as unknown as Screenshot
 }
 
+/**
+ * Public type aliases for CommonJS consumers, e.g. `screenshot.Options`.
+ */
 namespace screenshot {
   export type Screenshot = import('./lib/types').Screenshot
   export type Options = import('./lib/types').ScreenshotOptions
