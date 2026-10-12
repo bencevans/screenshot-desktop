@@ -6,6 +6,7 @@
   "devDependencies": {
     "@types/node": "^20.19.0",
     "ava": "^7.0.0",
+    "esbuild": "^0.28.2",
     "standard": "^17.0.0",
     "typescript": "^5.9.3"
   },
@@ -16,7 +17,7 @@
     "test": "ava",
     "semantic-release": "semantic-release",
     "lint": "standard \"test/**/*.js\" && tsc --noEmit",
-    "build": "tsc",
+    "build": "node scripts/build-windows-assets.cjs && tsc",
     "pretest": "npm run build",
     "prepare": "npm run build"
   },

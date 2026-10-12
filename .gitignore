@@ -10,3 +10,5 @@ out.jpg
 /index.d.ts
 /lib/**/*.js
 /lib/**/*.d.ts
+
+/lib/win32/assets.ts
