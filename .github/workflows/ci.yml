@@ -44,4 +44,4 @@ jobs:
         if: runner.os == 'Windows'
         env:
           SCREENSHOT_NATIVE_CLEANUP: '1'
-        run: npm test -- test/native-cleanup.js
+        run: npm test -- test/native-cleanup.js test/bundling.js

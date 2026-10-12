@@ -88,6 +88,16 @@ Display IDs and metadata vary by platform. The root API exposes shared fields
 and optional platform-specific fields; existing platform imports such as
 `screenshot-desktop/lib/win32` expose the corresponding display type.
 
+## Windows bundles and Electron
+
+The Windows helper and manifest are embedded in the built JavaScript and extracted
+into a real temporary directory before capture. Node-targeted CommonJS bundles
+(such as esbuild output) and Electron ASAR packages carry these assets automatically;
+no `asarUnpack` or `extraResources` configuration is needed for them.
+
+The original helper files remain in the npm package for existing integrations.
+Call the library from Electron's main process, where Node.js APIs are available.
+
 ## Development
 
 Run `npm ci` and `npm run build` before loading the package from a checkout.

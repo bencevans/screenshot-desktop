@@ -157,3 +157,22 @@ test.serial('concurrent Windows captures have independent directories', async t 
   t.deepEqual(images.map(image => image.toString()).sort(), ['1', '2'])
   for (const dir of directories) t.false(fs.existsSync(dir))
 })
+
+test.serial('restores the manifest when the helper cache is incomplete', async t => {
+  const originalTmpdir = os.tmpdir
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'windows-incomplete-cache-'))
+  os.tmpdir = () => dir
+  const cache = path.join(dir, 'screenCapture')
+  fs.mkdirSync(cache)
+  fs.copyFileSync(path.join(__dirname, '../lib/win32/screenCapture_1.3.3.bat'), path.join(cache, 'screenCapture_1.3.3.bat'))
+  execFileImpl = (file, args, options, callback) => {
+    t.deepEqual(fs.readFileSync(path.join(cache, 'app.manifest')), fs.readFileSync(path.join(__dirname, '../lib/win32/app.manifest')))
+    callback(null, displaysOutput)
+  }
+  try {
+    t.is((await windowsSnapshot.listDisplays())[0].id, displayId)
+  } finally {
+    os.tmpdir = originalTmpdir
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})

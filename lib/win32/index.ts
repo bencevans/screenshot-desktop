@@ -1,26 +1,27 @@
 import type { ScreenshotOptions, WindowsDisplay } from '../types'
-import type { Buffer } from 'buffer'
+import { Buffer } from 'buffer'
 import childProcess = require('child_process')
 import path = require('path')
 import utils = require('../utils')
 import fs = require('fs')
 import os = require('os')
+import assets = require('./assets')
 
 const { withTemporaryDirectory, defaultAll } = utils
 
 function copyToTemp () {
   const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.3.bat')
   const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
-  const includeBat = path.join(__dirname, 'screenCapture_1.3.3.bat').replace('app.asar', 'app.asar.unpacked')
-  const includeManifest = path.join(__dirname, 'app.manifest').replace('app.asar', 'app.asar.unpacked')
-  if (!fs.existsSync(tmpBat)) {
+  if (!fs.existsSync(tmpBat) || !fs.existsSync(tmpManifest)) {
     const tmpDir = path.join(os.tmpdir(), 'screenCapture')
     if (!fs.existsSync(tmpDir)) {
       fs.mkdirSync(tmpDir, { recursive: true })
     }
     const sourceData = {
-      bat: fs.readFileSync(includeBat),
-      manifest: fs.readFileSync(includeManifest)
+      // Static imports carry the helper through bundles and ASAR archives.
+      // cmd.exe still executes the extracted files in a real directory.
+      bat: Buffer.from(assets.bat, 'base64'),
+      manifest: Buffer.from(assets.manifest, 'base64')
     }
     fs.writeFileSync(tmpBat, sourceData.bat)
     fs.writeFileSync(tmpManifest, sourceData.manifest)

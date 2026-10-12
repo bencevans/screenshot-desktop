@@ -23,6 +23,7 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
       'lib/linux/index.js', 'lib/linux/index.d.ts',
       'lib/darwin/index.js', 'lib/darwin/index.d.ts',
       'lib/win32/index.js', 'lib/win32/index.d.ts',
+      'lib/win32/assets.js', 'lib/win32/assets.d.ts',
       'lib/win32/app.manifest', 'lib/win32/screenCapture_1.3.3.bat'
     ]) {
       t.true(files.includes(required), `package includes ${required}`)
@@ -36,7 +37,9 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
       fs.mkdirSync(path.dirname(destination), { recursive: true })
       fs.symlinkSync(path.dirname(require.resolve(`${dependency}/package.json`)), destination, 'junction')
     }
-    for (const asset of ['app.manifest', 'screenCapture_1.3.3.bat']) {
+    const embedded = require(path.join(packageDir, 'lib/win32/assets'))
+    for (const [name, asset] of [['manifest', 'app.manifest'], ['bat', 'screenCapture_1.3.3.bat']]) {
+      t.deepEqual(Buffer.from(embedded[name], 'base64'), fs.readFileSync(path.join(root, 'lib/win32', asset)))
       t.deepEqual(
         fs.readFileSync(path.join(packageDir, 'lib/win32', asset)),
         fs.readFileSync(path.join(root, 'lib/win32', asset))
