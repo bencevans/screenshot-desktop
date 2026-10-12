@@ -18,49 +18,47 @@
 ```js
 const screenshot = require('screenshot-desktop')
 
-screenshot().then((img) => {
-  // img: Buffer filled with jpg goodness
-  // ...
-}).catch((err) => {
-  // ...
-})
+async function main () {
+  try {
+    const img = await screenshot()
+    // img: Buffer containing a JPG screenshot
+    // ...
+  } catch (err) {
+    console.error(err)
+    process.exitCode = 1
+  }
+}
+
+main()
+```
+
+The following snippets go inside an async function, such as `main` above.
+ES modules can also use top-level `await`.
+
+```js
+const img = await screenshot({ format: 'png' })
+// img: Buffer containing a PNG screenshot
 ```
 
 ```js
-const screenshot = require('screenshot-desktop')
-
-screenshot({format: 'png'}).then((img) => {
-  // img: Buffer filled with png goodness
-  // ...
-}).catch((err) => {
-  // ...
-})
+const displays = await screenshot.listDisplays()
+// displays: [{ id, name }, { id, name }]
+const lastDisplay = displays[displays.length - 1]
+const img = await screenshot(lastDisplay ? { screen: lastDisplay.id } : {})
+// img: Buffer of the last display, or the default display if none are detected
 ```
 
 ```js
-screenshot.listDisplays().then((displays) => {
-  // displays: [{ id, name }, { id, name }]
-  screenshot({ screen: displays[displays.length - 1].id })
-    .then((img) => {
-      // img: Buffer of screenshot of the last display
-    });
-})
+const imgs = await screenshot.all()
+// imgs: an array of Buffers, one for each screen
 ```
 
 ```js
-screenshot.all().then((imgs) => {
-  // imgs: an array of Buffers, one for each screen
-})
-```
+const imgPath = await screenshot({ filename: 'shot.jpg' })
+// imgPath: absolute path to shot.jpg, saved in the working directory
 
-```js
-screenshot({ filename: 'shot.jpg' }).then((imgPath) => {
-  // imgPath: absolute path to screenshot
-  // created in current working directory named shot.png
-});
-
-// absolute paths work too. so do pngs
-screenshot({ filename: '/Users/brian/Desktop/demo.png' })
+// Absolute paths work too; set format to request PNG output.
+await screenshot({ filename: '/Users/brian/Desktop/demo.png', format: 'png' })
 ```
 
 ## screenshot() options

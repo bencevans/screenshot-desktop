@@ -1,13 +1,15 @@
 const screenshot = require('../')
-const fs = require('fs')
+const fs = require('fs/promises')
 
-screenshot().then((img) => {
-  fs.writeFile('out.jpg', img, function (err) {
-    if (err) {
-      throw err
-    }
+async function main () {
+  try {
+    const img = await screenshot()
+    await fs.writeFile('out.jpg', img)
     console.log('written to out.jpg')
-  })
-}).catch((err) => {
-  throw err
-})
+  } catch (err) {
+    console.error(err)
+    process.exitCode = 1
+  }
+}
+
+main()
