@@ -90,7 +90,12 @@ DP-2-2 connected 1920x1080+1920+0 (normal left inverted right x axis y axis) 476
   720x400       70.08
 DP-2-3 disconnected (normal left inverted right x axis y axis)`
 
-function parseDisplaysOutput (out: string): LinuxDisplay[] {
+/**
+ * Parse active xrandr outputs into display IDs, dimensions and crop geometry.
+ * Connected outputs without an active resolution are omitted.
+ * @param out - Standard output from `xrandr --current`.
+ */
+function parseDisplaysOutput(out: string): LinuxDisplay[] {
   return out
     .split('\n')
     .filter(line => line.indexOf(' connected ') > 0)
@@ -119,7 +124,10 @@ function parseDisplaysOutput (out: string): LinuxDisplay[] {
     })
 }
 
-function listDisplays (): Promise<LinuxDisplay[]> {
+/**
+ * Discover active X11 displays using xrandr; command failures reject the call.
+ */
+function listDisplays(): Promise<LinuxDisplay[]> {
   return new Promise((resolve, reject) => {
     exec('xrandr --current', (err, stdout) => {
       if (err) {
@@ -130,16 +138,23 @@ function listDisplays (): Promise<LinuxDisplay[]> {
   })
 }
 
-function maxBuffer (screens: LinuxDisplay[]): number {
+/**
+ * Allow enough stdout space for an encoded image of the detected desktop.
+ * The eight-byte-per-pixel estimate and 10 MiB minimum accommodate large PNGs.
+ */
+function maxBuffer(screens: LinuxDisplay[]): number {
   let total = 0
-  screens.forEach((screen) => {
+  screens.forEach(screen => {
     total += screen.height * screen.width
   })
   // PNG can exceed width*height bytes; use larger buffer for high-res screens
   return Math.max(total * 8, 10 * 1024 * 1024)
 }
 
-function guessFiletype (filename: string): string {
+/**
+ * Infer PNG or JPEG from the filename extension, defaulting to JPEG.
+ */
+function guessFiletype(filename: string): string {
   switch (path.extname(filename)) {
     case '.jpg':
     case '.jpeg':
@@ -151,7 +166,15 @@ function guessFiletype (filename: string): string {
   return 'jpeg'
 }
 
-function capture (cmd: string, args: string[], options: childProcess.ExecFileOptions): Promise<Buffer | string> {
+/**
+ * Run a capture tool with literal arguments and return its stdout.
+ * File output is written by the tool; execution failures reject the call.
+ */
+function capture(
+  cmd: string,
+  args: string[],
+  options: childProcess.ExecFileOptions
+): Promise<Buffer | string> {
   return new Promise<Buffer | string>((resolve, reject) => {
     childProcess.execFile(cmd, args, options, (err, stdout) => {
       if (err) return reject(err)
@@ -160,13 +183,26 @@ function capture (cmd: string, args: string[], options: childProcess.ExecFileOpt
   })
 }
 
-function linuxSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-function linuxSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
-function linuxSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
-function linuxSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
-async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
+/**
+ * Capture an X11 display using ImageMagick, or the whole desktop using scrot.
+ * Returns image bytes unless a nonempty filename requests a saved file path.
+ * ImageMagick supports format and display selection; scrot uses its own defaults.
+ * @param options - Output format, destination, display and Linux capture tool.
+ */
+function linuxSnapshot(options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
+function linuxSnapshot<const F extends string>(
+  options: Omit<ScreenshotOptions, 'filename'> & { filename: F }
+): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
+function linuxSnapshot(options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
+function linuxSnapshot(options: ScreenshotOptions): Promise<Buffer | string>
+async function linuxSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | string> {
   const screens = await listDisplays()
-  const screen = screens.find(options.screen ? screen => screen.id === options.screen : screen => screen.primary || screen.id === 'default') || screens[0]
+  const screen =
+    screens.find(
+      options.screen
+        ? screen => screen.id === options.screen
+        : screen => screen.primary || screen.id === 'default'
+    ) || screens[0]
 
   const allowedFormats = ['jpg', 'jpeg', 'png', 'tiff', 'bmp', 'gif']
   const filetype = (options.format || guessFiletype(options.filename || '')).toLowerCase()
@@ -175,10 +211,14 @@ async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer |
   const useScrot = options.linuxLibrary === 'scrot'
   const filename = options.filename ? path.resolve(options.filename) : null
   if (!useScrot && !filename) {
-    return capture('import', ['-silent', '-window', 'root', '-crop', screen.crop, '-screen', filetype + ':-'], {
-      encoding: 'buffer',
-      maxBuffer: maxBuffer(screens)
-    })
+    return capture(
+      'import',
+      ['-silent', '-window', 'root', '-crop', screen.crop, '-screen', filetype + ':-'],
+      {
+        encoding: 'buffer',
+        maxBuffer: maxBuffer(screens)
+      }
+    )
   }
 
   // Both tools interpret special strings in output filenames. Capture to a

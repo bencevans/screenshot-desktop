@@ -1,0 +1,3 @@
+# Build output: the helper bytes must remain identical to the source assets.
+lib/win32/assets.ts
+**/*.d.ts

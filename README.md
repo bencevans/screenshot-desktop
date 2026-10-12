@@ -102,7 +102,10 @@ Call the library from Electron's main process, where Node.js APIs are available.
 
 Run `npm ci` and `npm run build` before loading the package from a checkout.
 `npm test` builds automatically, and `npm pack` builds JavaScript and declarations
-before packaging. Generated files are ignored by Git. Native capture tests need
+before packaging. Generated files are ignored by Git. Run `npm run format` to format TypeScript with
+Prettier and JavaScript with Standard; `npm run lint` checks formatting and types.
+Function documentation uses JSDoc comments alongside TypeScript signatures, so it
+is also available in editors and the published declarations. Native capture tests need
 a desktop session and the platform's screenshot tools/permissions.
 
 ## Licence
