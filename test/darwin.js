@@ -97,3 +97,27 @@ test.serial('all propagates default capture failures', async t => {
   childProcess.execFile = (file, args, callback) => callback(error)
   t.is(await t.throwsAsync(screenshot.all()), error)
 })
+
+for (const filename of [
+  'directory with spaces/desktop image.png',
+  'café 路径/desktop.png',
+  'directory (test)/desktop & image.png',
+  'desktop "quoted" \'single\'.png',
+  'desktop; touch SCREENSHOT_INJECTION.png',
+  'desktop$(touch SCREENSHOT_INJECTION).png',
+  'desktop`touch SCREENSHOT_INJECTION`.png',
+  'desktop\nimage.png',
+  '-desktop.png'
+]) {
+  test.serial(`preserves the exact filename argument: ${JSON.stringify(filename)}`, async t => {
+    childProcess.execFile = (file, args, callback) => {
+      captures.push({ file, args })
+      callback(null, '')
+    }
+    const resolved = path.resolve(filename)
+    t.is(await screenshot({ filename, format: 'png' }), resolved)
+    t.is(captures.length, 1)
+    t.is(captures[0].file, 'screencapture')
+    t.deepEqual(captures[0].args, ['-x', '-t', 'png', resolved])
+  })
+}
