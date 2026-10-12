@@ -1,7 +1,6 @@
 const test = require('ava')
 const childProcess = require('child_process')
 const fs = require('fs')
-const os = require('os')
 const path = require('path')
 
 let execImpl
@@ -41,10 +40,11 @@ test.serial('captures a Buffer when display metadata is empty', async t => {
 })
 
 test.serial('captures to a file when display metadata is empty', async t => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'screenshot-darwin-'))
-  const filename = path.join(dir, 'desktop.png')
+  // Use a POSIX relative filename even when mocking macOS capture on Windows.
+  const dir = fs.mkdtempSync('screenshot-darwin-')
+  const filename = `${dir}/desktop.png`
   try {
-    t.is(await screenshot({ format: 'png', filename }), filename)
+    t.is(await screenshot({ format: 'png', filename }), path.resolve(filename))
     t.deepEqual(fs.readFileSync(filename), png)
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
