@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install xrandr
-        run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils imagemagick
+        run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils imagemagick scrot
         if: runner.os == 'Linux'
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
