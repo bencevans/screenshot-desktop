@@ -120,37 +120,57 @@ function windowsSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | stri
 }
 
 const EXAMPLE_DISPLAYS_OUTPUT =
-  '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0\r\n\\.\\DISPLAY2;0;3840;1080;1920\r\n'
+  '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0;1\r\n\\.\\DISPLAY2;0;3840;1080;1920;1\r\n'
 
 /**
- * Parse helper display records after its command-echo header.
- * Accept either a comma or period as the DPI decimal separator.
+ * Read complete display records independently of cmd.exe's echo or diagnostics.
+ * Bounds are signed integers; DPI accepts either locale decimal separator.
+ * Reject incomplete records and output without displays with a useful error.
  * @param output - Raw stdout from the batch helper with `/list`.
  */
 function parseDisplaysOutput(output: string): WindowsDisplay[] {
-  const displaysStartPattern = /2>nul {2}\|\| /
-  const { 0: match, index } = displaysStartPattern.exec(output)!
-  return output
-    .slice(index + match.length)
-    .split('\n')
-    .map(s => s.replace(/[\n\r]/g, ''))
-    .map(s => s.match(/(.*?);(.?\d+);(.?\d+);(.?\d+);(.?\d+);(.?\d*[\.,]?\d+)/)) // eslint-disable-line
-    .filter((s): s is RegExpMatchArray => s !== null)
-    .map(m => ({
-      id: m[1],
-      name: m[1],
-      top: +m[2],
-      right: +m[3],
-      bottom: +m[4],
-      left: +m[5],
-      dpiScale: +m[6].replace(',', '.')
-    }))
-    .map(d =>
-      Object.assign(d, {
-        height: d.bottom - d.top,
-        width: d.right - d.left
-      })
-    )
+  const displays: WindowsDisplay[] = []
+  const displayIdPattern = /^(?:\\{1,2}\.\\)?DISPLAY\d+$/
+  const integerPattern = /^-?\d+$/
+  const dpiPattern = /^\d+(?:[.,]\d+)?$/
+
+  for (const line of output.split(/\r\n|\n|\r/)) {
+    const fields = line
+      .trim()
+      .split(';')
+      .map(field => field.trim())
+    const id = fields[0]
+    // Ignore command echoes and diagnostics, which are not display records.
+    if (!displayIdPattern.test(id)) continue
+
+    if (
+      fields.length !== 6 ||
+      !fields.slice(1, 5).every(field => integerPattern.test(field)) ||
+      !dpiPattern.test(fields[5])
+    ) {
+      throw new Error(`Invalid Windows display record for ${id}: expected bounds and DPI scale`)
+    }
+
+    const [top, right, bottom, left] = fields.slice(1, 5).map(Number)
+    const dpiScale = Number(fields[5].replace(',', '.'))
+    const width = right - left
+    const height = bottom - top
+    if (
+      ![top, right, bottom, left, width, height].every(Number.isSafeInteger) ||
+      width <= 0 ||
+      height <= 0 ||
+      !Number.isFinite(dpiScale) ||
+      dpiScale <= 0
+    ) {
+      throw new Error(`Invalid Windows display geometry or DPI scale for ${id}`)
+    }
+    displays.push({ id, name: id, top, right, bottom, left, dpiScale, width, height })
+  }
+
+  if (displays.length === 0) {
+    throw new Error('No Windows display records found in screenshot helper output')
+  }
+  return displays
 }
 
 /**
