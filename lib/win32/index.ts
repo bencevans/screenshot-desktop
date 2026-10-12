@@ -6,11 +6,7 @@ import utils = require('../utils')
 import fs = require('fs')
 import os = require('os')
 
-const temp: { path(options: { suffix: string; dir?: string }): string } = require('temp')
-const {
-  readAndUnlinkP,
-  defaultAll
-} = utils
+const { withTemporaryDirectory, defaultAll } = utils
 
 function copyToTemp () {
   const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.3.bat')
@@ -73,33 +69,26 @@ function windowsSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | str
       .then(() => {
         const tmpBat = copyToTemp()
         const tmpDir = path.dirname(tmpBat)
-        const imgPath = temp.path({ dir: tmpDir, suffix: `.${format}` })
-        // Keep directory paths out of cmd.exe and the batch file's argument
-        // expansion. Both the helper and its output are relative to cwd.
-        const batArgs = [path.basename(imgPath)]
-        if (displayName) {
-          batArgs.push('/d', displayName)
-        }
-        const args = ['/d', '/c', path.basename(tmpBat), ...batArgs]
-        childProcess.execFile('cmd.exe', args, {
-          cwd: tmpDir,
-          windowsHide: true
-        }, (err, stdout, stderr) => {
-          if (err) {
-            return reject(err)
-          }
-          if (options.filename) {
-            // Copy temp file to requested path
-            fs.copyFile(imgPath, requestedPath!, (err) => {
-              if (err) return reject(err)
-              resolve(requestedPath!)
+        return withTemporaryDirectory('capture-', async directory => {
+          const imgPath = path.join(directory, `capture.${format}`)
+          // Use a generated relative path so temporary directory characters
+          // never enter cmd.exe argument expansion.
+          const batArgs = [path.relative(tmpDir, imgPath)]
+          if (displayName) batArgs.push('/d', displayName)
+          await new Promise<void>((resolve, reject) => {
+            childProcess.execFile('cmd.exe', ['/d', '/c', path.basename(tmpBat), ...batArgs], {
+              cwd: tmpDir,
+              windowsHide: true
+            }, err => err ? reject(err) : resolve())
+          })
+          if (requestedPath) {
+            await new Promise<void>((resolve, reject) => {
+              fs.copyFile(imgPath, requestedPath!, err => err ? reject(err) : resolve())
             })
-          } else {
-            readAndUnlinkP(imgPath)
-              .then(resolve)
-              .catch(reject)
+            return requestedPath
           }
-        })
+          return fs.promises.readFile(imgPath)
+        }, tmpDir).then(resolve)
       })
       .catch(reject)
   })

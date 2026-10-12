@@ -49,7 +49,7 @@ for (const folder of [
     const tmpDir = path.join(root, folder)
     fs.mkdirSync(tmpDir)
     try {
-      // A fresh process also refreshes temp's cached directory and exercises
+      // A fresh process uses the overridden temporary directory and exercises
       // compilation of the batch helper, rather than reusing a compiled copy.
       const result = spawnSync(process.execPath, ['-e', capture, require.resolve('../lib/win32')], {
         cwd: root,

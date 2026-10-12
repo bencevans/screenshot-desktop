@@ -3,14 +3,11 @@
   "version": "1.15.7",
   "description": "Capture a screenshot of your local machine",
   "main": "index.js",
-  "dependencies": {
-    "temp": "^0.9.4"
-  },
   "devDependencies": {
+    "@types/node": "^20.19.0",
     "ava": "^7.0.0",
     "standard": "^17.0.0",
-    "typescript": "^5.9.3",
-    "@types/node": "^20.19.0"
+    "typescript": "^5.9.3"
   },
   "ava": {
     "timeout": "3m"

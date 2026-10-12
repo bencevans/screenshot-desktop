@@ -1,4 +1,6 @@
 import fs = require('fs')
+import os = require('os')
+import path = require('path')
 import type { Buffer } from 'buffer'
 import type { Display, Screenshot } from './types'
 
@@ -54,4 +56,14 @@ export function defaultAll<D extends Display> (snapshot: Screenshot<D>): Promise
       })
       .catch(reject)
   })
+}
+
+/** Own every intermediate file in one private directory, including partial output. */
+export async function withTemporaryDirectory<T> (prefix: string, operation: (directory: string) => Promise<T>, parent = os.tmpdir()): Promise<T> {
+  const directory = await fs.promises.mkdtemp(path.join(parent, prefix))
+  try {
+    return await operation(directory)
+  } finally {
+    await fs.promises.rm(directory, { recursive: true, force: true })
+  }
 }

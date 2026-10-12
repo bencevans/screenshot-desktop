@@ -77,6 +77,7 @@ for (const linuxLibrary of ['scrot', 'imagemagick']) {
     childProcess.execFile = (file, args, options, callback) => {
       captures.push({ options })
       fs.writeFileSync(path.join(options.cwd, 'capture.png'), 'partial')
+      fs.writeFileSync(path.join(options.cwd, 'extra-partial'), 'extra')
       callback(error)
     }
     await t.throwsAsync(screenshot({ linuxLibrary, filename: 'unused.png', format: 'png' }), { is: error })

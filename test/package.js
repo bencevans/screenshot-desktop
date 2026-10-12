@@ -31,7 +31,7 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
     fs.mkdirSync(packageDir, { recursive: true })
     execFileSync('tar', ['-xzf', path.join(fixture, packed.filename), '-C', packageDir, '--strip-components=1'])
     // Supply installed dependencies without downloading anything during this test.
-    for (const dependency of ['temp', '@types/node', 'undici-types']) {
+    for (const dependency of ['@types/node', 'undici-types']) {
       const destination = path.join(fixture, 'node_modules', dependency)
       fs.mkdirSync(path.dirname(destination), { recursive: true })
       fs.symlinkSync(path.dirname(require.resolve(`${dependency}/package.json`)), destination, 'junction')

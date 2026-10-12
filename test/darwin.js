@@ -121,3 +121,42 @@ for (const filename of [
     t.deepEqual(captures[0].args, ['-x', '-t', 'png', resolved])
   })
 }
+
+for (const all of [false, true]) {
+  for (const failure of ['capture', 'read']) {
+    test.serial(`cleans macOS partial output after ${all ? 'all' : 'single'} ${failure} failure`, async t => {
+      execImpl = (command, callback) => callback(null, screenshot.EXAMPLE_DISPLAYS_OUTPUT)
+      const error = new Error('capture failed')
+      childProcess.execFile = (file, args, callback) => {
+        captures.push({ file, args })
+        fs.writeFileSync(args[3], png)
+        // Extra output from a failed tool must also be removed.
+        fs.writeFileSync(path.join(path.dirname(args[3]), 'partial'), png)
+        callback(failure === 'capture' ? error : null)
+      }
+      const rejected = await t.throwsAsync(all ? screenshot.all() : screenshot({ screen: 1 }))
+      if (failure === 'capture') t.is(rejected, error)
+      else t.is(rejected.code, 'ENOENT')
+      t.false(fs.existsSync(path.dirname(captures[0].args[3])))
+    })
+  }
+}
+
+test.serial('filename capture removes unselected macOS display images', async t => {
+  execImpl = (command, callback) => callback(null, screenshot.EXAMPLE_DISPLAYS_OUTPUT)
+  const dir = fs.mkdtempSync('darwin-filename-')
+  const filename = path.join(dir, 'image.png')
+  try {
+    t.is(await screenshot({ screen: 1, filename }), path.resolve(filename))
+    t.deepEqual(fs.readFileSync(filename), png)
+    t.false(fs.existsSync(path.dirname(captures[0].args[3])))
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test.serial('all uses literal file arguments and removes its directory', async t => {
+  execImpl = (command, callback) => callback(null, screenshot.EXAMPLE_DISPLAYS_OUTPUT)
+  t.deepEqual(await screenshot.all(), [png, png])
+  t.false(fs.existsSync(path.dirname(captures[0].args[3])))
+})

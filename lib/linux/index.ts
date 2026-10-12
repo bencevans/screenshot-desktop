@@ -3,11 +3,10 @@ import type { Buffer } from 'buffer'
 import childProcess = require('child_process')
 import path = require('path')
 import { promises as fs } from 'fs'
-import os = require('os')
 import utils = require('../utils')
 
 const { exec } = childProcess
-const { defaultAll } = utils
+const { defaultAll, withTemporaryDirectory } = utils
 
 const EXAMPLE_DISPLAYS_OUTPUT = `Screen 0: minimum 320 x 200, current 5760 x 1080, maximum 8192 x 8192
 eDP-1 connected (normal left inverted right x axis y axis)
@@ -185,10 +184,9 @@ async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer |
   // Both tools interpret special strings in output filenames. Capture to a
   // fixed name in a private directory, then copy to the caller's literal path.
   // A file also works with older scrot versions that cannot write to stdout.
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'screenshot-linux-'))
-  const output = `capture.${filetype}`
-  const imagePath = path.join(dir, output)
-  try {
+  return withTemporaryDirectory('screenshot-linux-', async dir => {
+    const output = `capture.${filetype}`
+    const imagePath = path.join(dir, output)
     const args = useScrot
       ? ['-z', output]
       : ['-silent', '-window', 'root', '-crop', screen.crop, '-screen', `${filetype}:${output}`]
@@ -198,12 +196,7 @@ async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer |
       return filename
     }
     return await fs.readFile(imagePath)
-  } finally {
-    await fs.unlink(imagePath).catch(err => {
-      if (err.code !== 'ENOENT') throw err
-    })
-    await fs.rmdir(dir)
-  }
+  })
 }
 
 linuxSnapshot.listDisplays = listDisplays
