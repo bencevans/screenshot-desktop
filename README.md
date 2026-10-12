@@ -67,7 +67,7 @@ screenshot({ filename: '/Users/brian/Desktop/demo.png' })
 
 - `filename` Optional. Absolute or relative path to save output.
 - `format` Optional. Valid values `png|jpg`. 
-- `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support format or screen selection.
+- `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support screen selection.
 
 On macOS VMs, display discovery can return an empty list even when screen capture works. Omit `screen` to capture the default display in this case; `screenshot.all()` returns that capture as a one-element array. Explicit display selection still requires detected displays.
 

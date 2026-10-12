@@ -186,7 +186,7 @@ function capture(
 /**
  * Capture an X11 display using ImageMagick, or the whole desktop using scrot.
  * Returns image bytes unless a nonempty filename requests a saved file path.
- * ImageMagick supports format and display selection; scrot uses its own defaults.
+ * Both tools support output formats; only ImageMagick supports display selection.
  * @param options - Output format, destination, display and Linux capture tool.
  */
 function linuxSnapshot(options: ScreenshotOptions & { filename: '' }): Promise<Buffer>

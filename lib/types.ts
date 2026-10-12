@@ -19,7 +19,7 @@ export interface ScreenshotOptions {
    */
   screen?: string | number
   /**
-   * Linux capture tool. scrot captures the whole desktop without format selection.
+   * Linux capture tool. scrot captures the whole desktop without display selection.
    */
   linuxLibrary?: 'scrot' | 'imagemagick'
 }
