@@ -105,11 +105,55 @@ test.serial('keeps temporary directory paths out of Windows commands', async t =
       t.deepEqual(command.args.slice(0, 3), ['/d', '/c', 'screenCapture_1.3.3.bat'])
       t.false(command.args.some(arg => arg.includes(tmpDir)))
     }
-    t.is(path.dirname(copiedFrom), path.join(tmpDir, 'screenCapture'))
-    t.is(commands[1].args[3], path.basename(copiedFrom))
+    t.is(path.dirname(path.dirname(copiedFrom)), path.join(tmpDir, 'screenCapture'))
+    t.false(fs.existsSync(path.dirname(copiedFrom)))
+    t.is(commands[1].args[3], path.relative(commands[1].options.cwd, copiedFrom))
   } finally {
     os.tmpdir = originalTmpdir
     fs.copyFile = originalCopyFile
     fs.rmSync(tmpDir, { recursive: true, force: true })
   }
+})
+
+for (const mode of ['buffer', 'filename', 'capture failure', 'read failure', 'copy failure']) {
+  test.serial(`removes Windows capture directory after ${mode}`, async t => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'windows-cleanup-'))
+    const filename = mode === 'copy failure' ? dir : path.join(dir, 'image.png')
+    let imagePath
+    const error = new Error('capture failed')
+    execFileImpl = (file, args, options, callback) => {
+      imagePath = path.resolve(options.cwd, args[3])
+      if (mode !== 'read failure') fs.writeFileSync(imagePath, 'image')
+      fs.writeFileSync(path.join(path.dirname(imagePath), 'partial'), 'extra')
+      callback(mode === 'capture failure' ? error : null)
+    }
+    try {
+      const operation = windowsSnapshot({ format: 'png', ...(['filename', 'copy failure'].includes(mode) ? { filename } : {}) })
+      if (mode.endsWith('failure')) {
+        const rejected = await t.throwsAsync(operation)
+        if (mode === 'capture failure') t.is(rejected, error)
+        if (mode === 'read failure') t.is(rejected.code, 'ENOENT')
+      } else if (mode === 'filename') {
+        t.is(await operation, filename)
+        t.is(fs.readFileSync(filename, 'utf8'), 'image')
+      } else t.deepEqual(await operation, Buffer.from('image'))
+      t.false(fs.existsSync(path.dirname(imagePath)))
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+}
+
+test.serial('concurrent Windows captures have independent directories', async t => {
+  const directories = []
+  execFileImpl = (file, args, options, callback) => {
+    const imagePath = path.resolve(options.cwd, args[3])
+    directories.push(path.dirname(imagePath))
+    fs.writeFileSync(imagePath, String(directories.length))
+    setImmediate(() => callback(null))
+  }
+  const images = await Promise.all([windowsSnapshot(), windowsSnapshot()])
+  t.not(directories[0], directories[1])
+  t.deepEqual(images.map(image => image.toString()), ['1', '2'])
+  for (const dir of directories) t.false(fs.existsSync(dir))
 })

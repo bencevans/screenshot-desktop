@@ -6,19 +6,18 @@ import utils = require('../utils')
 import path = require('path')
 
 const { exec } = childProcess
-const temp: { path(options: { suffix: string }): string } = require('temp')
-const { unlinkP, readAndUnlinkP } = utils
+const { withTemporaryDirectory } = utils
 
 function darwinSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
 function darwinSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
 function darwinSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
 function darwinSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
 function darwinSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
-  const performScreenCapture = (displays: DarwinDisplay[]) => new Promise<Buffer | string>((resolve, reject) => {
+  const performScreenCapture = async (displays: DarwinDisplay[]): Promise<Buffer | string> => {
     // validate displayId
     const totalDisplays = displays.length
     if (totalDisplays === 0 && options.screen !== undefined) {
-      return reject(new Error('No displays detected try dropping screen option'))
+      throw new Error('No displays detected try dropping screen option')
     }
     // macOS VMs can have a working desktop without system_profiler metadata.
     // Let screencapture capture the default display when none was requested.
@@ -26,14 +25,14 @@ function darwinSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | stri
     const displayId = options.screen || 0
     if (!Number.isInteger(displayId) || typeof displayId !== 'number' || displayId < 0 || displayId > maxDisplayId) {
       const validChoiceMsg = (maxDisplayId === 0) ? '(valid choice is 0 or drop screen option altogether)' : `(valid choice is an integer between 0 and ${maxDisplayId})`
-      return reject(new Error(`Invalid choice of displayId: ${displayId} ${validChoiceMsg}`))
+      throw new Error(`Invalid choice of displayId: ${displayId} ${validChoiceMsg}`)
     }
 
     // Validate format
     const allowedFormats = ['jpg', 'jpeg', 'png', 'tiff', 'bmp', 'gif', 'pdf']
     const format = (options.format || 'jpg').toLowerCase()
     if (!allowedFormats.includes(format)) {
-      return reject(new Error('Invalid format'))
+      throw new Error('Invalid format')
     }
 
     // Resolve filenames before passing them as a literal execFile argument.
@@ -47,35 +46,13 @@ function darwinSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | stri
       suffix = `.${format}`
     }
 
-    const tmpPaths = Array(displayId + 1)
-      .fill(null)
-      .map(() => temp.path({ suffix }))
-
-    let pathsToUse: string[] = []
-    if (options.filename) {
-      tmpPaths[displayId] = filename
-    }
-    pathsToUse = tmpPaths.slice(0, displayId + 1)
-
-    // Use execFile for safe argument passing
-    const args = ['-x', '-t', format, ...pathsToUse]
-    childProcess.execFile('screencapture', args, function (err, stdOut) {
-      if (err) {
-        return reject(err)
-      } else if (options.filename) {
-        resolve(path.resolve(filename))
-      } else {
-        fs.readFile(tmpPaths[displayId], function (err, img) {
-          if (err) {
-            return reject(err)
-          }
-          Promise.all(pathsToUse.map(unlinkP))
-            .then(() => resolve(img))
-            .catch((err) => reject(err))
-        })
-      }
+    return withTemporaryDirectory('screenshot-darwin-', async directory => {
+      const tmpPaths = Array.from({ length: displayId + 1 }, (_, index) => path.join(directory, `capture-${index}${suffix}`))
+      if (options.filename) tmpPaths[displayId] = filename
+      await capture(['-x', '-t', format, ...tmpPaths])
+      return options.filename ? filename : fs.promises.readFile(tmpPaths[displayId])
     })
-  })
+  }
 
   return listDisplays().then((displays) => { return performScreenCapture(displays) })
 }
@@ -220,24 +197,19 @@ function listDisplays (): Promise<DarwinDisplay[]> {
   })
 }
 
-function all (): Promise<Buffer[]> {
+function capture (args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    listDisplays()
-      .then((displays) => {
-        if (displays.length === 0) {
-          return darwinSnapshot().then(img => resolve([img]), reject)
-        }
-        const tmpPaths = displays.map(() => temp.path({ suffix: '.jpg' }))
-        exec('screencapture -x -t jpg ' + tmpPaths.join(' '), function (err, stdOut) {
-          if (err) {
-            return reject(err)
-          } else {
-            Promise.all(tmpPaths.map(readAndUnlinkP))
-              .then(resolve)
-              .catch(reject)
-          }
-        })
-      })
+    childProcess.execFile('screencapture', args, err => err ? reject(err) : resolve())
+  })
+}
+
+async function all (): Promise<Buffer[]> {
+  const displays = await listDisplays()
+  if (displays.length === 0) return [await darwinSnapshot()]
+  return withTemporaryDirectory('screenshot-darwin-', async directory => {
+    const paths = displays.map((_, index) => path.join(directory, `capture-${index}.jpg`))
+    await capture(['-x', '-t', 'jpg', ...paths])
+    return Promise.all(paths.map(filename => fs.promises.readFile(filename)))
   })
 }
 

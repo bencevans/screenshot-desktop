@@ -1,5 +1,16 @@
 const test = require('ava')
-const { path: tempPathSync } = require('temp')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const directories = []
+function tempPathSync () {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'screenshot-test-'))
+  directories.push(dir)
+  return path.join(dir, 'image with space.jpg')
+}
+test.after.always(() => {
+  for (const dir of directories) fs.rmSync(dir, { recursive: true, force: true })
+})
 const { existsSync, unlinkSync } = require('fs')
 const screenshot = require('./')
 
