@@ -128,7 +128,6 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
   }
 })
 
-
 test('unsupported platforms retain the callable rejection without attached methods', async t => {
   const context = { process: { platform: 'unsupported' }, module: { exports: {} } }
   vm.runInNewContext(fs.readFileSync(require.resolve('../'), 'utf8'), context)
