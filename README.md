@@ -16,51 +16,37 @@
 ## Usage
 
 ```js
-const screenshot = require('screenshot-desktop')
+import screenshot from 'screenshot-desktop'
 
-screenshot().then((img) => {
-  // img: Buffer filled with jpg goodness
-  // ...
-}).catch((err) => {
-  // ...
-})
+const img = await screenshot()
+// img: Buffer containing a JPG screenshot
+// ...
 ```
 
 ```js
-const screenshot = require('screenshot-desktop')
-
-screenshot({format: 'png'}).then((img) => {
-  // img: Buffer filled with png goodness
-  // ...
-}).catch((err) => {
-  // ...
-})
+const img = await screenshot({ format: 'png' })
+// img: Buffer containing a PNG screenshot
 ```
 
 ```js
-screenshot.listDisplays().then((displays) => {
-  // displays: [{ id, name }, { id, name }]
-  screenshot({ screen: displays[displays.length - 1].id })
-    .then((img) => {
-      // img: Buffer of screenshot of the last display
-    });
-})
+const displays = await screenshot.listDisplays()
+// displays: [{ id, name }, { id, name }]
+const lastDisplay = displays[displays.length - 1]
+const img = await screenshot(lastDisplay ? { screen: lastDisplay.id } : {})
+// img: Buffer of the last display, or the default display if none are detected
 ```
 
 ```js
-screenshot.all().then((imgs) => {
-  // imgs: an array of Buffers, one for each screen
-})
+const imgs = await screenshot.all()
+// imgs: an array of Buffers, one for each screen
 ```
 
 ```js
-screenshot({ filename: 'shot.jpg' }).then((imgPath) => {
-  // imgPath: absolute path to screenshot
-  // created in current working directory named shot.png
-});
+const imgPath = await screenshot({ filename: 'shot.jpg' })
+// imgPath: absolute path to shot.jpg, saved in the working directory
 
-// absolute paths work too. so do pngs
-screenshot({ filename: '/Users/brian/Desktop/demo.png' })
+// Absolute paths work too; set format to request PNG output.
+await screenshot({ filename: '/Users/brian/Desktop/demo.png', format: 'png' })
 ```
 
 ## screenshot() options
