@@ -1,8 +1,13 @@
-const exec = require('child_process').exec
-const path = require('path')
-const fs = require('fs').promises
-const os = require('os')
-const defaultAll = require('../utils').defaultAll
+import type { ScreenshotOptions, LinuxDisplay } from '../types'
+import type { Buffer } from 'buffer'
+import childProcess = require('child_process')
+import path = require('path')
+import { promises as fs } from 'fs'
+import os = require('os')
+import * as utils from '../utils'
+
+const { exec } = childProcess
+const { defaultAll } = utils
 
 const EXAMPLE_DISPLAYS_OUTPUT = `Screen 0: minimum 320 x 200, current 5760 x 1080, maximum 8192 x 8192
 eDP-1 connected (normal left inverted right x axis y axis)
@@ -86,7 +91,7 @@ DP-2-2 connected 1920x1080+1920+0 (normal left inverted right x axis y axis) 476
   720x400       70.08
 DP-2-3 disconnected (normal left inverted right x axis y axis)`
 
-function parseDisplaysOutput (out) {
+function parseDisplaysOutput (out: string): LinuxDisplay[] {
   return out
     .split('\n')
     .filter(line => line.indexOf(' connected ') > 0)
@@ -115,7 +120,7 @@ function parseDisplaysOutput (out) {
     })
 }
 
-function listDisplays () {
+function listDisplays (): Promise<LinuxDisplay[]> {
   return new Promise((resolve, reject) => {
     exec('xrandr --current', (err, stdout) => {
       if (err) {
@@ -126,7 +131,7 @@ function listDisplays () {
   })
 }
 
-function maxBuffer (screens) {
+function maxBuffer (screens: LinuxDisplay[]): number {
   let total = 0
   screens.forEach((screen) => {
     total += screen.height * screen.width
@@ -135,7 +140,7 @@ function maxBuffer (screens) {
   return Math.max(total * 8, 10 * 1024 * 1024)
 }
 
-function guessFiletype (filename) {
+function guessFiletype (filename: string): string {
   switch (path.extname(filename)) {
     case '.jpg':
     case '.jpeg':
@@ -147,16 +152,20 @@ function guessFiletype (filename) {
   return 'jpeg'
 }
 
-function capture (cmd, args, options) {
-  return new Promise((resolve, reject) => {
-    require('child_process').execFile(cmd, args, options, (err, stdout) => {
+function capture (cmd: string, args: string[], options: childProcess.ExecFileOptions): Promise<Buffer | string> {
+  return new Promise<Buffer | string>((resolve, reject) => {
+    childProcess.execFile(cmd, args, options, (err, stdout) => {
       if (err) return reject(err)
       resolve(stdout)
     })
   })
 }
 
-async function linuxSnapshot (options = {}) {
+function linuxSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
+function linuxSnapshot (options: ScreenshotOptions & { filename: string }): Promise<string>
+function linuxSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
+function linuxSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
+async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
   const screens = await listDisplays()
   const screen = screens.find(options.screen ? screen => screen.id === options.screen : screen => screen.primary || screen.id === 'default') || screens[0]
 
@@ -200,5 +209,5 @@ async function linuxSnapshot (options = {}) {
 linuxSnapshot.listDisplays = listDisplays
 linuxSnapshot.parseDisplaysOutput = parseDisplaysOutput
 linuxSnapshot.EXAMPLE_DISPLAYS_OUTPUT = EXAMPLE_DISPLAYS_OUTPUT
-linuxSnapshot.all = () => defaultAll(linuxSnapshot)
-module.exports = linuxSnapshot
+linuxSnapshot.all = (): Promise<Buffer[]> => defaultAll(linuxSnapshot)
+export = linuxSnapshot

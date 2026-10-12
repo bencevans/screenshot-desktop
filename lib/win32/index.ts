@@ -1,10 +1,12 @@
-const childProcess = require('child_process')
-const temp = require('temp')
-const path = require('path')
-const utils = require('../utils')
-const fs = require('fs')
-const os = require('os')
+import type { ScreenshotOptions, WindowsDisplay } from '../types'
+import type { Buffer } from 'buffer'
+import childProcess = require('child_process')
+import path = require('path')
+import * as utils from '../utils'
+import fs = require('fs')
+import os = require('os')
 
+const temp: { path(options: { suffix: string; dir?: string }): string } = require('temp')
 const {
   readAndUnlinkP,
   defaultAll
@@ -30,8 +32,12 @@ function copyToTemp () {
   return tmpBat
 }
 
-function windowsSnapshot (options = {}) {
-  return new Promise((resolve, reject) => {
+function windowsSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
+function windowsSnapshot (options: ScreenshotOptions & { filename: string }): Promise<string>
+function windowsSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
+function windowsSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
+function windowsSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
+  return new Promise<Buffer | string>((resolve, reject) => {
     // Validate format
     const allowedFormats = ['jpg', 'jpeg', 'png', 'bmp']
     const format = (options.format || 'jpg').toLowerCase()
@@ -39,7 +45,7 @@ function windowsSnapshot (options = {}) {
       return reject(new Error('Invalid format'))
     }
 
-    let requestedPath = null
+    let requestedPath: string | null = null
     if (options.filename) {
       // The requested filename is only used by filesystem APIs, never cmd.exe.
       // Preserve its characters and let the filesystem reject invalid paths.
@@ -84,9 +90,9 @@ function windowsSnapshot (options = {}) {
           }
           if (options.filename) {
             // Copy temp file to requested path
-            fs.copyFile(imgPath, requestedPath, (err) => {
+            fs.copyFile(imgPath, requestedPath!, (err) => {
               if (err) return reject(err)
-              resolve(requestedPath)
+              resolve(requestedPath!)
             })
           } else {
             readAndUnlinkP(imgPath)
@@ -101,17 +107,17 @@ function windowsSnapshot (options = {}) {
 
 const EXAMPLE_DISPLAYS_OUTPUT = '\r\nC:\\Users\\devetry\\screenshot-desktop\\lib\\win32>//  2>nul  || \r\n\\.\\DISPLAY1;0;1920;1080;0\r\n\\.\\DISPLAY2;0;3840;1080;1920\r\n'
 
-function parseDisplaysOutput (output) {
+function parseDisplaysOutput (output: string): WindowsDisplay[] {
   const displaysStartPattern = /2>nul {2}\|\| /
   const {
     0: match,
     index
-  } = displaysStartPattern.exec(output)
+  } = displaysStartPattern.exec(output)!
   return output.slice(index + match.length)
     .split('\n')
     .map(s => s.replace(/[\n\r]/g, ''))
     .map(s => s.match(/(.*?);(.?\d+);(.?\d+);(.?\d+);(.?\d+);(.?\d*[\.,]?\d+)/)) // eslint-disable-line
-    .filter(s => s)
+    .filter((s): s is RegExpMatchArray => s !== null)
     .map(m => ({
       id: m[1],
       name: m[1],
@@ -127,7 +133,7 @@ function parseDisplaysOutput (output) {
     }))
 }
 
-function listDisplays () {
+function listDisplays (): Promise<WindowsDisplay[]> {
   return new Promise((resolve, reject) => {
     const tmpBat = copyToTemp()
     childProcess.execFile(
@@ -152,6 +158,6 @@ windowsSnapshot.listDisplays = listDisplays
 windowsSnapshot.availableDisplays = listDisplays
 windowsSnapshot.parseDisplaysOutput = parseDisplaysOutput
 windowsSnapshot.EXAMPLE_DISPLAYS_OUTPUT = EXAMPLE_DISPLAYS_OUTPUT
-windowsSnapshot.all = () => defaultAll(windowsSnapshot)
+windowsSnapshot.all = (): Promise<Buffer[]> => defaultAll(windowsSnapshot)
 
-module.exports = windowsSnapshot
+export = windowsSnapshot
