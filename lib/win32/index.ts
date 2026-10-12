@@ -2,7 +2,7 @@ import type { ScreenshotOptions, WindowsDisplay } from '../types'
 import type { Buffer } from 'buffer'
 import childProcess = require('child_process')
 import path = require('path')
-import * as utils from '../utils'
+import utils = require('../utils')
 import fs = require('fs')
 import os = require('os')
 
@@ -33,7 +33,7 @@ function copyToTemp () {
 }
 
 function windowsSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-function windowsSnapshot (options: ScreenshotOptions & { filename: string }): Promise<string>
+function windowsSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
 function windowsSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
 function windowsSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
 function windowsSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {

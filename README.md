@@ -73,7 +73,7 @@ On macOS VMs, display discovery can return an empty list even when screen captur
 
 ## TypeScript
 
-The package includes declarations for the existing JavaScript API. Node.js types
+The package includes TypeScript 5+ declarations for the existing JavaScript API. Node.js types
 must be available in your TypeScript project (`npm install --save-dev @types/node`).
 
 ```ts

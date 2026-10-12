@@ -1,4 +1,4 @@
-import * as fs from 'fs'
+import fs = require('fs')
 import type { Buffer } from 'buffer'
 import type { Display, Screenshot } from './types'
 
@@ -55,4 +55,3 @@ export function defaultAll<D extends Display> (snapshot: Screenshot<D>): Promise
       .catch(reject)
   })
 }
-

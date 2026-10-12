@@ -10,7 +10,7 @@ if (process.platform === 'linux') {
 } else {
   screenshot = function unSupported () {
     return Promise.reject(new Error('Currently unsupported platform. Pull requests welcome!'))
-  } as Screenshot
+  } as unknown as Screenshot
 }
 
 namespace screenshot {

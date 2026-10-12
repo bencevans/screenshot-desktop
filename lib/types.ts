@@ -51,7 +51,7 @@ export interface WindowsDisplay extends Display {
 
 export interface Screenshot<D extends Display = Display> {
   (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-  (options: ScreenshotOptions & { filename: string }): Promise<string>
+  <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
   (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
   (options: ScreenshotOptions): Promise<Buffer | string>
   listDisplays(): Promise<D[]>

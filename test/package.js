@@ -3,6 +3,7 @@ const { execFileSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const vm = require('vm')
 
 const root = path.resolve(__dirname, '..')
 
@@ -45,6 +46,8 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
       const assert = require('assert/strict')
       const screenshot = require('screenshot-desktop')
       assert.equal(typeof screenshot, 'function')
+      assert.equal(require('screenshot-desktop/lib/' + process.platform), screenshot)
+      assert.equal(screenshot.screenshot, undefined)
       assert.equal(typeof screenshot.listDisplays, 'function')
       assert.equal(typeof screenshot.all, 'function')
       assert.equal(require('screenshot-desktop/index'), screenshot)
@@ -76,6 +79,10 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
       const emptyFilename: Promise<Buffer> = screenshot({ filename: '' })
       const png: Promise<Buffer> = screenshot({ format: 'png', screen: 0 })
       const filename: Promise<string> = screenshot({ filename: 'shot.png', screen: 'DISPLAY' })
+      const variableFilename: string = Math.random() ? 'shot.png' : ''
+      const variableResult: Promise<Buffer | string> = screenshot({ filename: variableFilename })
+      // @ts-expect-error a dynamically empty filename can return a Buffer
+      const wrongVariableResult: Promise<string> = screenshot({ filename: variableFilename })
       const options: ScreenshotOptions = { format: 'png' }
       const result: Promise<Buffer | string> = screenshot(options)
       const images: Promise<Buffer[]> = screenshot.all()
@@ -119,4 +126,15 @@ test('packed package preserves CommonJS paths and supports ESM and TypeScript im
   } finally {
     fs.rmSync(fixture, { recursive: true, force: true })
   }
+})
+
+
+test('unsupported platforms retain the callable rejection without attached methods', async t => {
+  const context = { process: { platform: 'unsupported' }, module: { exports: {} } }
+  vm.runInNewContext(fs.readFileSync(require.resolve('../'), 'utf8'), context)
+  t.is(typeof context.module.exports, 'function')
+  t.deepEqual(Object.keys(context.module.exports), [])
+  await t.throwsAsync(context.module.exports(), {
+    message: 'Currently unsupported platform. Pull requests welcome!'
+  })
 })

@@ -4,7 +4,7 @@ import childProcess = require('child_process')
 import path = require('path')
 import { promises as fs } from 'fs'
 import os = require('os')
-import * as utils from '../utils'
+import utils = require('../utils')
 
 const { exec } = childProcess
 const { defaultAll } = utils
@@ -162,7 +162,7 @@ function capture (cmd: string, args: string[], options: childProcess.ExecFileOpt
 }
 
 function linuxSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-function linuxSnapshot (options: ScreenshotOptions & { filename: string }): Promise<string>
+function linuxSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
 function linuxSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
 function linuxSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
 async function linuxSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {

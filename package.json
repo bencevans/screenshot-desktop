@@ -21,7 +21,7 @@
     "lint": "standard \"test/**/*.js\" && tsc --noEmit",
     "build": "tsc",
     "pretest": "npm run build",
-    "prepack": "npm run build"
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",

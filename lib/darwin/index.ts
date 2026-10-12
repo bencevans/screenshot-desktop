@@ -2,7 +2,7 @@ import type { ScreenshotOptions, DarwinDisplay } from '../types'
 import type { Buffer } from 'buffer'
 import childProcess = require('child_process')
 import fs = require('fs')
-import * as utils from '../utils'
+import utils = require('../utils')
 import path = require('path')
 
 const { exec } = childProcess
@@ -10,7 +10,7 @@ const temp: { path(options: { suffix: string }): string } = require('temp')
 const { unlinkP, readAndUnlinkP } = utils
 
 function darwinSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
-function darwinSnapshot (options: ScreenshotOptions & { filename: string }): Promise<string>
+function darwinSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
 function darwinSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
 function darwinSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
 function darwinSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
