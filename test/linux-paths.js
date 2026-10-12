@@ -32,12 +32,12 @@ for (const linuxLibrary of ['scrot', 'imagemagick']) {
       'desktop; touch INJECTION_MARKER.png', 'desktop$(touch INJECTION_MARKER).png',
       'desktop`touch INJECTION_MARKER`.png', 'desktop\nimage.png', '-desktop.png'
     ]
-    const previousCwd = process.cwd()
     try {
-      process.chdir(dir)
       for (const filename of filenames) {
-        t.is(await screenshot({ linuxLibrary, filename, format: 'png' }), path.join(dir, filename))
-        checkImage(t, fs.readFileSync(filename), 'png')
+        const output = path.join(dir, filename)
+        const relative = path.relative(process.cwd(), output)
+        t.is(await screenshot({ linuxLibrary, filename: relative, format: 'png' }), output)
+        checkImage(t, fs.readFileSync(output), 'png')
       }
       const absolute = path.join(dir, 'absolute %Y $f image.png')
       t.is(await screenshot({ linuxLibrary, filename: absolute }), absolute)
@@ -45,9 +45,8 @@ for (const linuxLibrary of ['scrot', 'imagemagick']) {
       const noExtension = path.join(dir, 'no extension')
       t.is(await screenshot({ linuxLibrary, filename: noExtension, format: 'jpeg' }), noExtension)
       checkImage(t, fs.readFileSync(noExtension), 'jpeg')
-      t.false(fs.existsSync('INJECTION_MARKER'))
+      t.false(fs.existsSync(path.join(dir, 'INJECTION_MARKER')))
     } finally {
-      process.chdir(previousCwd)
       fs.rmSync(dir, { recursive: true, force: true })
     }
   })
