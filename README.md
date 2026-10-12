@@ -16,24 +16,12 @@
 ## Usage
 
 ```js
-const screenshot = require('screenshot-desktop')
+import screenshot from 'screenshot-desktop'
 
-async function main () {
-  try {
-    const img = await screenshot()
-    // img: Buffer containing a JPG screenshot
-    // ...
-  } catch (err) {
-    console.error(err)
-    process.exitCode = 1
-  }
-}
-
-main()
+const img = await screenshot()
+// img: Buffer containing a JPG screenshot
+// ...
 ```
-
-The following snippets go inside an async function, such as `main` above.
-ES modules can also use top-level `await`.
 
 ```js
 const img = await screenshot({ format: 'png' })
