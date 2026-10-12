@@ -11,14 +11,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-latest, macos-latest]
         node-version: [20.x, 22.x, 24.x, 25.x]
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
-      - name: Install xrandr
+      - name: Install Linux capture tools
         run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils imagemagick scrot xvfb xauth
         if: runner.os == 'Linux'
       - name: Use Node.js ${{ matrix.node-version }}
