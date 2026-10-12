@@ -21,8 +21,8 @@
     "build": "node scripts/build-windows-assets.cjs && tsc",
     "pretest": "npm run build",
     "prepare": "npm run build",
-    "format": "prettier --write \"index.ts\" \"lib/**/*.ts\" && standard --fix \"test/**/*.js\" \"examples/**/*.js\" \"scripts/**/*.cjs\"",
-    "format:check": "prettier --check \"index.ts\" \"lib/**/*.ts\" && standard \"test/**/*.js\" \"examples/**/*.js\" \"scripts/**/*.cjs\""
+    "format": "prettier --write \"index.ts\" \"lib/**/*.ts\" && standard --fix \"test/**/*.js\" \"examples/**/*.{js,mjs}\" \"scripts/**/*.cjs\"",
+    "format:check": "prettier --check \"index.ts\" \"lib/**/*.ts\" && standard \"test/**/*.js\" \"examples/**/*.{js,mjs}\" \"scripts/**/*.cjs\""
   },
   "repository": {
     "type": "git",
