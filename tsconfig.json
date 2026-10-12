@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "declaration": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "index.ts",
+    "lib/**/*.ts"
+  ]
+}

@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20.x, 22.x, 24.x, 25.x]
 
     runs-on: ${{ matrix.os }}
@@ -26,7 +26,11 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
+      - name: Run macOS tests
+        if: runner.os == 'macOS'
+        run: npm test -- "test/**/*.js"
       - name: Run headless test
+        if: runner.os != 'macOS'
         uses: coactions/setup-xvfb@v1
         with:
           working-directory: ./ #optional

@@ -8,15 +8,20 @@
   },
   "devDependencies": {
     "ava": "^7.0.0",
-    "standard": "^17.0.0"
+    "standard": "^17.0.0",
+    "typescript": "^5.9.3",
+    "@types/node": "^20.19.0"
   },
   "ava": {
-    "timeout": "1m"
+    "timeout": "3m"
   },
   "scripts": {
     "test": "ava",
     "semantic-release": "semantic-release",
-    "lint": "standard"
+    "lint": "standard \"test/**/*.js\" && tsc --noEmit",
+    "build": "tsc",
+    "pretest": "npm run build",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -46,5 +51,14 @@
     "branches": [
       "main"
     ]
-  }
+  },
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/win32/*.bat",
+    "lib/win32/app.manifest"
+  ]
 }

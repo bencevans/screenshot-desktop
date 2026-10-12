@@ -1,13 +1,20 @@
-const exec = require('child_process').exec
-const temp = require('temp')
-const fs = require('fs')
-const utils = require('../utils')
-const path = require('path')
+import type { ScreenshotOptions, DarwinDisplay } from '../types'
+import type { Buffer } from 'buffer'
+import childProcess = require('child_process')
+import fs = require('fs')
+import utils = require('../utils')
+import path = require('path')
 
+const { exec } = childProcess
+const temp: { path(options: { suffix: string }): string } = require('temp')
 const { unlinkP, readAndUnlinkP } = utils
 
-function darwinSnapshot (options = {}) {
-  const performScreenCapture = displays => new Promise((resolve, reject) => {
+function darwinSnapshot (options: ScreenshotOptions & { filename: '' }): Promise<Buffer>
+function darwinSnapshot <const F extends string>(options: Omit<ScreenshotOptions, 'filename'> & { filename: F }): Promise<F extends '' ? Buffer : string extends F ? Buffer | string : string>
+function darwinSnapshot (options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
+function darwinSnapshot (options: ScreenshotOptions): Promise<Buffer | string>
+function darwinSnapshot (options: ScreenshotOptions = {}): Promise<Buffer | string> {
+  const performScreenCapture = (displays: DarwinDisplay[]) => new Promise<Buffer | string>((resolve, reject) => {
     // validate displayId
     const totalDisplays = displays.length
     if (totalDisplays === 0 && options.screen !== undefined) {
@@ -17,7 +24,7 @@ function darwinSnapshot (options = {}) {
     // Let screencapture capture the default display when none was requested.
     const maxDisplayId = Math.max(totalDisplays - 1, 0)
     const displayId = options.screen || 0
-    if (!Number.isInteger(displayId) || displayId < 0 || displayId > maxDisplayId) {
+    if (!Number.isInteger(displayId) || typeof displayId !== 'number' || displayId < 0 || displayId > maxDisplayId) {
       const validChoiceMsg = (maxDisplayId === 0) ? '(valid choice is 0 or drop screen option altogether)' : `(valid choice is an integer between 0 and ${maxDisplayId})`
       return reject(new Error(`Invalid choice of displayId: ${displayId} ${validChoiceMsg}`))
     }
@@ -30,7 +37,8 @@ function darwinSnapshot (options = {}) {
     }
 
     // Resolve filenames before passing them as a literal execFile argument.
-    let filename, suffix
+    let filename = ''
+    let suffix: string
     if (options.filename) {
       // An absolute path also prevents leading hyphens being read as options.
       filename = path.resolve(options.filename)
@@ -43,7 +51,7 @@ function darwinSnapshot (options = {}) {
       .fill(null)
       .map(() => temp.path({ suffix }))
 
-    let pathsToUse = []
+    let pathsToUse: string[] = []
     if (options.filename) {
       tmpPaths[displayId] = filename
     }
@@ -51,7 +59,7 @@ function darwinSnapshot (options = {}) {
 
     // Use execFile for safe argument passing
     const args = ['-x', '-t', format, ...pathsToUse]
-    require('child_process').execFile('screencapture', args, function (err, stdOut) {
+    childProcess.execFile('screencapture', args, function (err, stdOut) {
       if (err) {
         return reject(err)
       } else if (options.filename) {
@@ -104,8 +112,18 @@ Graphics/Displays:
           Television: Yes
 `
 
-function extractEntries (output) {
-  const entries = []
+interface Entry {
+  indent: number
+  key: string
+  value: string
+}
+
+interface Tree {
+  [key: string]: string | Tree
+}
+
+function extractEntries (output: string): Entry[] {
+  const entries: Entry[] = []
 
   const entryPattern = /(\s*)(.*?):(.*)\n/g
   let match
@@ -120,7 +138,7 @@ function extractEntries (output) {
   return entries
 }
 
-function makeSubtree (currIndent, subtree, entries) {
+function makeSubtree (currIndent: number, subtree: Tree, entries: Entry[]): void {
   let entry
   while ((entry = entries.shift())) {
     if (entry.value === '') {
@@ -128,8 +146,9 @@ function makeSubtree (currIndent, subtree, entries) {
         while (entry.key in subtree) {
           entry.key += '_1'
         }
-        subtree[entry.key] = {}
-        makeSubtree(entry.indent, subtree[entry.key], entries)
+        const child: Tree = {}
+        subtree[entry.key] = child
+        makeSubtree(entry.indent, child, entries)
       } else {
         entries.unshift(entry)
         return
@@ -143,13 +162,13 @@ function makeSubtree (currIndent, subtree, entries) {
   }
 }
 
-function movePrimaryToHead (displays) {
+function movePrimaryToHead (displays: Omit<DarwinDisplay, 'id'>[]) {
   const primary = displays.filter(e => e.primary)
   const notPrimary = displays.filter(e => !e.primary)
   return [...primary, ...notPrimary]
 }
 
-function addId (displays) {
+function addId (displays: Omit<DarwinDisplay, 'id'>[]): DarwinDisplay[] {
   let id = 0
   return displays
     .map(display => {
@@ -157,27 +176,28 @@ function addId (displays) {
     })
 }
 
-function parseDisplaysOutput (output) {
-  const tree = {}
+function parseDisplaysOutput (output: string): DarwinDisplay[] {
+  const tree: Tree = {}
   makeSubtree(-1, tree, extractEntries(output))
 
   if (!tree['Graphics/Displays']) {
     return []
   }
 
-  const firstGpuKeys = Object.keys(tree['Graphics/Displays'])
+  const graphics = tree['Graphics/Displays'] as Tree
+  const firstGpuKeys = Object.keys(graphics)
   if (!firstGpuKeys || firstGpuKeys.length <= 0) {
     return []
   }
 
-  let displayinfos = []
+  let displayinfos: Omit<DarwinDisplay, 'id'>[] = []
 
   firstGpuKeys.forEach(gpukey => {
-    const gpu = tree['Graphics/Displays'][gpukey]
+    const gpu = graphics[gpukey] as Tree
     if (gpu.Displays) {
-      const temp = Object.entries(gpu.Displays)
+      const temp = Object.entries(gpu.Displays as Tree)
         .map(([name, props]) => {
-          const primary = props['Main Display'] === 'Yes'
+          const primary = (props as Tree)['Main Display'] === 'Yes'
           return { name, primary }
         })
       displayinfos = displayinfos.concat(temp)
@@ -187,7 +207,7 @@ function parseDisplaysOutput (output) {
   return addId(movePrimaryToHead(displayinfos))
 }
 
-function listDisplays () {
+function listDisplays (): Promise<DarwinDisplay[]> {
   return new Promise((resolve, reject) => {
     exec(
       'system_profiler SPDisplaysDataType',
@@ -200,7 +220,7 @@ function listDisplays () {
   })
 }
 
-function all () {
+function all (): Promise<Buffer[]> {
   return new Promise((resolve, reject) => {
     listDisplays()
       .then((displays) => {
@@ -226,4 +246,4 @@ darwinSnapshot.all = all
 darwinSnapshot.parseDisplaysOutput = parseDisplaysOutput
 darwinSnapshot.EXAMPLE_DISPLAYS_OUTPUT = EXAMPLE_DISPLAYS_OUTPUT
 
-module.exports = darwinSnapshot
+export = darwinSnapshot
