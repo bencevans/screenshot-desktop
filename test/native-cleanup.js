@@ -4,7 +4,7 @@ const os = require('os')
 const path = require('path')
 const childProcess = require('child_process')
 const screenshot = require('../')
-const native = process.platform !== 'darwin' || process.env.SCREENSHOT_NATIVE_CLEANUP === '1' ? test.serial : test.skip
+const native = process.env.SCREENSHOT_NATIVE_CLEANUP === '1' ? test.serial : test.skip
 
 native('native capture cleans temporary directories on success and failure', async t => {
   const created = []

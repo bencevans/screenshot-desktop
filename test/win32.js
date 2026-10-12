@@ -154,6 +154,6 @@ test.serial('concurrent Windows captures have independent directories', async t 
   }
   const images = await Promise.all([windowsSnapshot(), windowsSnapshot()])
   t.not(directories[0], directories[1])
-  t.deepEqual(images.map(image => image.toString()), ['1', '2'])
+  t.deepEqual(images.map(image => image.toString()).sort(), ['1', '2'])
   for (const dir of directories) t.false(fs.existsSync(dir))
 })

@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install xrandr
-        run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils imagemagick scrot
+        run: sudo apt-get update && sudo apt-get install -y x11-xserver-utils imagemagick scrot xvfb xauth
         if: runner.os == 'Linux'
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
@@ -29,9 +29,19 @@ jobs:
       - name: Run macOS tests
         if: runner.os == 'macOS'
         run: npm test -- "test/**/*.js"
-      - name: Run headless test
-        if: runner.os != 'macOS'
-        uses: coactions/setup-xvfb@v1
-        with:
-          working-directory: ./ #optional
-          run: npm test
+      - name: Run Linux tests
+        if: runner.os == 'Linux'
+        run: xvfb-run -a -s '-screen 0 1280x1024x24 -noreset' npm test
+      - name: Run Windows tests
+        if: runner.os == 'Windows'
+        run: npm test
+      - name: Verify native Linux cleanup
+        if: runner.os == 'Linux'
+        env:
+          SCREENSHOT_NATIVE_CLEANUP: '1'
+        run: xvfb-run -a -s '-screen 0 1280x1024x24 -noreset' npm test -- test/native-cleanup.js
+      - name: Verify native Windows cleanup
+        if: runner.os == 'Windows'
+        env:
+          SCREENSHOT_NATIVE_CLEANUP: '1'
+        run: npm test -- test/native-cleanup.js
