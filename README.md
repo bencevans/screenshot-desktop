@@ -52,10 +52,42 @@ await screenshot({ filename: '/Users/brian/Desktop/demo.png', format: 'png' })
 ## screenshot() options
 
 - `filename` Optional. Absolute or relative path to save output.
-- `format` Optional. Valid values `png|jpg`. 
+- `format` Optional. See [supported image formats](#supported-image-formats) below. Values are case-insensitive.
 - `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support screen selection.
 
 On macOS VMs, display discovery can return an empty list even when screen capture works. Omit `screen` to capture the default display in this case; `screenshot.all()` returns that capture as a one-element array. Explicit display selection still requires detected displays.
+
+## Supported image formats
+
+Support depends on the platform and, on Linux, the selected capture tool.
+This matrix applies to both Buffer output and files saved with `filename`.
+
+| `format` | Windows | macOS | Linux: ImageMagick (default) | Linux: scrot |
+| --- | --- | --- | --- | --- |
+| `jpg`, `jpeg` | Yes | Yes | Yes | Yes |
+| `png` | Yes | Yes | Yes | Yes |
+| `bmp` | Yes | Yes | Yes | Yes |
+| `tiff` | No | Yes | Yes | Yes |
+| `gif` | No | Yes | Yes | Depends (see below) |
+| `pdf` | No | Yes | No | No |
+
+“Yes” formats were verified with native capture tools in Windows, macOS and Linux
+VMs, checking the actual encoding of both returned Buffers and saved files.
+“No” means the library rejects that format. Other values, including `webp`,
+`emf`, `exif` and `wmf`, are rejected on all platforms.
+
+Linux output also depends on the encoders available in the installed capture tool.
+The library accepts `gif` with scrot, but GIF saving failed in the tested Ubuntu
+24.04 installation. Use `linuxLibrary: 'imagemagick'` for GIF output.
+
+The default output is JPEG. Set `format` explicitly for consistent behavior across
+platforms: Windows and macOS do not infer the encoding from `filename`. Linux
+infers PNG from a `.png` filename and otherwise defaults to JPEG; other formats
+still need an explicit `format`.
+
+```js
+await screenshot({ filename: 'shot.bmp', format: 'bmp' })
+```
 
 ## TypeScript
 
