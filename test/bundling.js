@@ -30,6 +30,7 @@ test('esbuild includes Windows helper assets without adjacent files or node_modu
       const os = require('os')
       const cp = require('child_process')
       os.tmpdir = () => __dirname
+      os.homedir = () => __dirname
       cp.execFile = (file, args, options, callback) => {
         assert.equal(file, 'cmd.exe')
         assert.ok(fs.existsSync(path.join(options.cwd, 'screenCapture_1.3.3.bat')))
@@ -42,13 +43,11 @@ test('esbuild includes Windows helper assets without adjacent files or node_modu
       ;(async () => {
         assert.equal((await screenshot.listDisplays())[0].id, 'DISPLAY1')
         assert.equal((await screenshot({format: 'png'})).toString('hex'), '89504e470d0a1a0a')
-        assert.equal(fs.readdirSync(path.join(__dirname, 'screenCapture')).filter(name => name.startsWith('capture-')).length, 0)
+        assert.equal(fs.readdirSync(__dirname).filter(name => name.startsWith('screenCapture-')).length, 0)
       })().catch(error => { console.error(error); process.exitCode = 1 })
     `)
     execFileSync(process.execPath, [runner], { cwd: os.tmpdir(), stdio: 'pipe' })
-    for (const filename of ['screenCapture_1.3.3.bat', 'app.manifest']) {
-      t.deepEqual(fs.readFileSync(path.join(directory, 'screenCapture', filename)), fs.readFileSync(path.join(__dirname, '../lib/win32', filename)))
-    }
+    t.false(fs.existsSync(path.join(directory, 'screenCapture')))
     t.false(fs.existsSync(path.join(directory, 'node_modules')))
     t.true(fs.existsSync(bundle))
   } finally {
@@ -57,7 +56,7 @@ test('esbuild includes Windows helper assets without adjacent files or node_modu
 })
 
 const native = process.platform === 'win32' && process.env.SCREENSHOT_NATIVE_CLEANUP === '1' ? test : test.skip
-native('standalone esbuild bundle captures on Windows with a fresh helper cache', async t => {
+native('standalone esbuild bundle captures on Windows with private helpers', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'bundle native café & !percent%-'))
   try {
     await build(directory, false)

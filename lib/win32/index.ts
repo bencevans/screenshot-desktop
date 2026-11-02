@@ -9,36 +9,46 @@ import assets = require('./assets')
 
 const { withTemporaryDirectory, defaultAll } = utils
 
-/**
- * Extract embedded helper assets into the shared Windows helper cache.
- * The batch file and manifest must be real files for cmd.exe and the C# compiler.
- * Restore both assets if either is missing; keep the cache for later captures.
- * @returns Absolute path to the executable batch helper.
- */
-function copyToTemp() {
-  const tmpBat = path.join(os.tmpdir(), 'screenCapture', 'screenCapture_1.3.3.bat')
-  const tmpManifest = path.join(os.tmpdir(), 'screenCapture', 'app.manifest')
-  if (!fs.existsSync(tmpBat) || !fs.existsSync(tmpManifest)) {
-    const tmpDir = path.join(os.tmpdir(), 'screenCapture')
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true })
-    }
-    const sourceData = {
-      // Static imports carry the helper through bundles and ASAR archives.
-      // cmd.exe still executes the extracted files in a real directory.
-      bat: Buffer.from(assets.bat, 'base64'),
-      manifest: Buffer.from(assets.manifest, 'base64')
-    }
-    fs.writeFileSync(tmpBat, sourceData.bat)
-    fs.writeFileSync(tmpManifest, sourceData.manifest)
+/** Keep helper files out of shared writable temp directories. */
+function helperParent(): string {
+  const home = os.homedir()
+  // A 32-bit csc.exe cannot resolve files below the 64-bit System32 profile.
+  // SystemTemp and the 32-bit system profile are private to SYSTEM.
+  if (
+    process.platform === 'win32' &&
+    /[\\/]system32[\\/]config[\\/]systemprofile[\\/]?$/i.test(home)
+  ) {
+    const windowsDir = path.dirname(path.dirname(path.dirname(home)))
+    const systemTemp = path.join(windowsDir, 'SystemTemp')
+    const compilerProfile = path.join(windowsDir, 'SysWOW64', 'config', 'systemprofile')
+    return fs.existsSync(systemTemp)
+      ? systemTemp
+      : fs.existsSync(compilerProfile)
+        ? compilerProfile
+        : home
   }
-  return tmpBat
+  return home
+}
+
+/** Extract the helper into a newly created directory owned by this operation. */
+function writeHelper(directory: string): void {
+  // Static imports carry the helper through bundles and ASAR archives.
+  // Exclusive writes ensure an unexpected file is never executed.
+  fs.writeFileSync(
+    path.join(directory, 'screenCapture_1.3.3.bat'),
+    Buffer.from(assets.bat, 'base64'),
+    { flag: 'wx' }
+  )
+  fs.writeFileSync(path.join(directory, 'app.manifest'), Buffer.from(assets.manifest, 'base64'), {
+    flag: 'wx'
+  })
 }
 
 /**
  * Capture the Windows desktop or a validated display using the batch helper.
  * Returns image bytes, or an absolute saved path for a nonempty filename.
- * Each capture owns a private directory inside the shared helper cache.
+ * Each capture owns a fresh helper directory under an account-private parent
+ * and a private output directory, avoiding shared writable temp roots.
  * Caller filenames are copied via filesystem APIs and never passed to cmd.exe.
  * @param options - Output format, destination and operating-system display ID.
  */
@@ -83,36 +93,41 @@ function windowsSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | stri
 
     displayValidation
       .then(() => {
-        const tmpBat = copyToTemp()
-        const tmpDir = path.dirname(tmpBat)
         return withTemporaryDirectory(
-          'capture-',
-          async directory => {
-            const imgPath = path.join(directory, `capture.${format}`)
-            // Use a generated relative path so temporary directory characters
-            // never enter cmd.exe argument expansion.
-            const batArgs = [path.relative(tmpDir, imgPath)]
-            if (displayName) batArgs.push('/d', displayName)
-            await new Promise<void>((resolve, reject) => {
-              childProcess.execFile(
-                'cmd.exe',
-                ['/d', '/c', path.basename(tmpBat), ...batArgs],
-                {
-                  cwd: tmpDir,
-                  windowsHide: true
-                },
-                err => (err ? reject(err) : resolve())
-              )
-            })
-            if (requestedPath) {
-              await new Promise<void>((resolve, reject) => {
-                fs.copyFile(imgPath, requestedPath!, err => (err ? reject(err) : resolve()))
-              })
-              return requestedPath
-            }
-            return fs.promises.readFile(imgPath)
+          'screenCapture-',
+          async helperDir => {
+            writeHelper(helperDir)
+            return withTemporaryDirectory(
+              'capture-',
+              async directory => {
+                const imgPath = path.join(directory, `capture.${format}`)
+                // Use a generated relative path so temporary directory characters
+                // never enter cmd.exe argument expansion.
+                const batArgs = [path.relative(helperDir, imgPath)]
+                if (displayName) batArgs.push('/d', displayName)
+                await new Promise<void>((resolve, reject) => {
+                  childProcess.execFile(
+                    'cmd.exe',
+                    ['/d', '/c', 'screenCapture_1.3.3.bat', ...batArgs],
+                    {
+                      cwd: helperDir,
+                      windowsHide: true
+                    },
+                    err => (err ? reject(err) : resolve())
+                  )
+                })
+                if (requestedPath) {
+                  await new Promise<void>((resolve, reject) => {
+                    fs.copyFile(imgPath, requestedPath!, err => (err ? reject(err) : resolve()))
+                  })
+                  return requestedPath
+                }
+                return fs.promises.readFile(imgPath)
+              },
+              helperDir
+            )
           },
-          tmpDir
+          helperParent()
         ).then(resolve)
       })
       .catch(reject)
@@ -178,27 +193,22 @@ function parseDisplaysOutput(output: string): WindowsDisplay[] {
  * Execution and malformed-output errors reject the call.
  */
 function listDisplays(): Promise<WindowsDisplay[]> {
-  return new Promise((resolve, reject) => {
-    const tmpBat = copyToTemp()
-    childProcess.execFile(
-      'cmd.exe',
-      ['/d', '/c', path.basename(tmpBat), '/list'],
-      {
-        cwd: path.dirname(tmpBat),
-        windowsHide: true
-      },
-      (err, stdout) => {
-        if (err) {
-          return reject(err)
-        }
-        try {
-          resolve(parseDisplaysOutput(stdout))
-        } catch (parseErr) {
-          reject(parseErr)
-        }
-      }
-    )
-  })
+  return withTemporaryDirectory(
+    'screenCapture-',
+    async directory => {
+      writeHelper(directory)
+      const stdout = await new Promise<string>((resolve, reject) => {
+        childProcess.execFile(
+          'cmd.exe',
+          ['/d', '/c', 'screenCapture_1.3.3.bat', '/list'],
+          { cwd: directory, windowsHide: true },
+          (err, output) => (err ? reject(err) : resolve(output))
+        )
+      })
+      return parseDisplaysOutput(stdout)
+    },
+    helperParent()
+  )
 }
 
 windowsSnapshot.listDisplays = listDisplays

@@ -57,6 +57,7 @@ for (const folder of [
           ...process.env,
           TEMP: tmpDir,
           TMP: tmpDir,
+          USERPROFILE: tmpDir,
           SCREENSHOT_PATH_EXPANSION: 'expanded & mkdir SCREENSHOT_INJECTION & rem '
         },
         encoding: 'utf8',
@@ -69,3 +70,46 @@ for (const folder of [
     }
   })
 }
+
+windowsTest('ignores a pre-planted helper in the shared temp directory', t => {
+  t.timeout(120000)
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'screenshot-planted-'))
+  const shared = path.join(root, 'shared')
+  const legacy = path.join(shared, 'screenCapture')
+  fs.mkdirSync(legacy, { recursive: true })
+  const planted = path.join(legacy, 'screenCapture_1.3.3.bat')
+  fs.writeFileSync(planted, '@echo off\r\necho PLANTED>"%TEMP%\\planted-marker.txt"\r\n')
+  fs.writeFileSync(path.join(legacy, 'app.manifest'), '<planted/>')
+  try {
+    const result = spawnSync(process.execPath, ['-e', `
+      const assert = require('assert/strict')
+      const fs = require('fs')
+      const path = require('path')
+      const cp = require('child_process')
+      const directories = []
+      const originalExecFile = cp.execFile
+      cp.execFile = (...args) => {
+        directories.push(args[2].cwd)
+        return originalExecFile(...args)
+      }
+      const screenshot = require(process.argv[1])
+      screenshot({ format: 'png' }).then(image => {
+        assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
+        assert.equal(directories.length, 1)
+        assert.notEqual(directories[0], path.join(process.env.TEMP, 'screenCapture'))
+        assert.equal(fs.existsSync(directories[0]), false)
+        assert.equal(fs.existsSync(path.join(process.env.TEMP, 'planted-marker.txt')), false)
+        console.log('Planted helper ignored')
+      }).catch(error => { console.error(error); process.exitCode = 1 })
+    `, require.resolve('../lib/win32')], {
+      env: { ...process.env, TEMP: shared, TMP: shared },
+      encoding: 'utf8',
+      timeout: 90000
+    })
+    t.is(result.status, 0, result.error ? result.error.message : result.stderr || result.stdout)
+    t.true(result.stdout.includes('Planted helper ignored'))
+    t.match(fs.readFileSync(planted, 'utf8'), /PLANTED/)
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
