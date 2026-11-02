@@ -108,7 +108,7 @@ windowsTest('ignores a pre-planted helper in the shared temp directory', t => {
     })
     t.is(result.status, 0, result.error ? result.error.message : result.stderr || result.stdout)
     t.true(result.stdout.includes('Planted helper ignored'))
-    t.match(fs.readFileSync(planted, 'utf8'), /PLANTED/)
+    t.true(fs.readFileSync(planted, 'utf8').includes('PLANTED'))
   } finally {
     fs.rmSync(root, { recursive: true, force: true })
   }
