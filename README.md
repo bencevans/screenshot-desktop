@@ -54,7 +54,7 @@ await screenshot({ filename: '/Users/brian/Desktop/demo.png', format: 'png' })
 - `filename` Optional. Absolute or relative path to save output.
 - `format` Optional. See [supported image formats](#supported-image-formats) below. Values are case-insensitive.
 - `linuxLibrary` Optional. Linux only. Valid values `scrot|imagemagick`. Which library to use. Note that scrot does not support screen selection.
-- `includeCursor` Optional. macOS only. Include the mouse cursor in the capture. Windows and Linux reject the option.
+- `includeCursor` Optional. macOS only. Include the mouse cursor in the capture. Windows and Linux reject it when enabled; `false` is accepted on every platform.
 
 On macOS VMs, display discovery can return an empty list even when screen capture works. Omit `screen` to capture the default display in this case; `screenshot.all()` returns that capture as a one-element array. Explicit display selection still requires detected displays.
 

@@ -214,3 +214,21 @@ test.serial('ignores a pre-planted shared helper and removes the private helper'
     fs.rmSync(dir, { recursive: true, force: true })
   }
 })
+test.serial('rejects includeCursor and accepts it when disabled', async t => {
+  let spawned = false
+  execFileImpl = (file, args, options, callback) => {
+    spawned = true
+    callback(null, '')
+  }
+
+  await t.throwsAsync(windowsSnapshot({ includeCursor: true }), {
+    message: 'includeCursor is only supported on macOS'
+  })
+  t.false(spawned, 'no capture command should run when includeCursor is rejected')
+
+  execFileImpl = (file, args, options, callback) => {
+    fs.writeFileSync(path.resolve(options.cwd, args[3]), 'image')
+    callback(null)
+  }
+  t.deepEqual(await windowsSnapshot({ format: 'png', includeCursor: false }), Buffer.from('image'))
+})

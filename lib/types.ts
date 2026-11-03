@@ -19,7 +19,8 @@ export interface ScreenshotOptions {
    */
   screen?: string | number
   /**
-   * Include the mouse cursor in the capture. macOS only; other platforms reject it.
+   * Include the mouse cursor in the capture. macOS only; Windows and Linux
+   * reject it when enabled. Omitting the option or passing `false` is fine.
    */
   includeCursor?: boolean
   /**

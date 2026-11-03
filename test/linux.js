@@ -115,3 +115,12 @@ test.serial('rejects invalid formats before starting capture', async t => {
   await t.throwsAsync(screenshot({ linuxLibrary: 'scrot', format: 'invalid' }), { message: 'Invalid format' })
   t.is(captures.length, 0)
 })
+test.serial('rejects includeCursor and accepts it when disabled', async t => {
+  await t.throwsAsync(screenshot({ includeCursor: true }), {
+    message: 'includeCursor is only supported on macOS'
+  })
+  t.is(captures.length, 0)
+
+  t.deepEqual(await screenshot({ linuxLibrary: 'scrot', format: 'png', includeCursor: false }), png)
+  checkCleanup(t)
+})
