@@ -196,6 +196,9 @@ function linuxSnapshot<const F extends string>(
 function linuxSnapshot(options?: ScreenshotOptions & { filename?: undefined }): Promise<Buffer>
 function linuxSnapshot(options: ScreenshotOptions): Promise<Buffer | string>
 async function linuxSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | string> {
+  if (options.includeCursor) {
+    throw new Error('includeCursor is only supported on macOS')
+  }
   const screens = await listDisplays()
   const screen =
     screens.find(

@@ -19,6 +19,10 @@ export interface ScreenshotOptions {
    */
   screen?: string | number
   /**
+   * Include the mouse cursor in the capture. macOS only; other platforms reject it.
+   */
+  includeCursor?: boolean
+  /**
    * Linux capture tool. scrot captures the whole desktop without display selection.
    */
   linuxLibrary?: 'scrot' | 'imagemagick'

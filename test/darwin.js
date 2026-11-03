@@ -20,7 +20,9 @@ test.beforeEach(() => {
   }
   childProcess.execFile = (file, args, callback) => {
     captures.push({ file, args })
-    for (const filename of args.slice(3)) fs.writeFileSync(filename, png)
+    for (const filename of args.filter(argument => path.isAbsolute(argument))) {
+      fs.writeFileSync(filename, png)
+    }
     callback(null, '')
   }
 })
@@ -37,6 +39,15 @@ test.serial('captures a Buffer when display metadata is empty', async t => {
   t.deepEqual(captures[0].args.slice(0, 3), ['-x', '-t', 'png'])
   t.is(captures[0].args.length, 4)
   t.false(fs.existsSync(captures[0].args[3]))
+})
+test.serial('passes -C when includeCursor is enabled', async t => {
+  t.deepEqual(await screenshot({ format: 'png', includeCursor: true }), png)
+  t.deepEqual(captures[0].args.slice(0, 4), ['-x', '-t', 'png', '-C'])
+})
+
+test.serial('omits -C by default', async t => {
+  await screenshot({ format: 'png' })
+  t.false(captures[0].args.includes('-C'))
 })
 
 test.serial('captures to a file when display metadata is empty', async t => {

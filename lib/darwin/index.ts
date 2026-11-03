@@ -70,7 +70,8 @@ function darwinSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | strin
         path.join(directory, `capture-${index}${suffix}`)
       )
       if (options.filename) tmpPaths[displayId] = filename
-      await capture(['-x', '-t', format, ...tmpPaths])
+      const cursorArgs = options.includeCursor ? ['-C'] : []
+      await capture(['-x', '-t', format, ...cursorArgs, ...tmpPaths])
       return options.filename ? filename : fs.promises.readFile(tmpPaths[displayId])
     })
   }

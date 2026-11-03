@@ -60,6 +60,9 @@ function windowsSnapshot(options?: ScreenshotOptions & { filename?: undefined })
 function windowsSnapshot(options: ScreenshotOptions): Promise<Buffer | string>
 function windowsSnapshot(options: ScreenshotOptions = {}): Promise<Buffer | string> {
   return new Promise<Buffer | string>((resolve, reject) => {
+    if (options.includeCursor) {
+      return reject(new Error('includeCursor is only supported on macOS'))
+    }
     // Validate format
     const allowedFormats = ['jpg', 'jpeg', 'png', 'bmp']
     const format = (options.format || 'jpg').toLowerCase()
